@@ -7,9 +7,6 @@ let mousePrev = [];
 
 export default function Raycasting(camera, scene, getBoxes, callback) {
   window.addEventListener("mousedown", (event) => {
-    if (event.target.closest(".menu")) {
-      return;
-    }
     dragging = false;
   });
 
@@ -29,14 +26,16 @@ export default function Raycasting(camera, scene, getBoxes, callback) {
     clickMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(clickMouse, camera);
-    const found = raycaster.intersectObjects(scene.children);
+    let found = raycaster.intersectObjects(scene.children);
     let intersation = found.filter((item) => item.object.userData.interactive)[0]?.object;
+    // console.log(raycaster.intersectObjects(scene.children));
 
     if (!intersation) {
       const boxes = getBoxes();
       for (let box of boxes) {
         if (raycaster.ray.intersectsBox(box)) {
           intersation = box.model;
+          found = raycaster.intersectObjects(box.model);
           // console.log(box)
           // intersation.userData.parent = box;
           // console.log(intersation)
@@ -44,6 +43,6 @@ export default function Raycasting(camera, scene, getBoxes, callback) {
       }
     }
 
-    callback(intersation);
+    callback(found[0]);
   });
 }

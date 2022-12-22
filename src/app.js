@@ -1,40 +1,30 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 import {
   OrbitControls
-} from 'three/addons/OrbitControls.js';
+} from "three/addons/OrbitControls.js";
 
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { createBox } from './utils.js';
+import {
+  CSS2DRenderer,
+  CSS2DObject,
+} from "three/addons/CSS2DRenderer.js";
+
+import Stats from "three/addons/stats.module.js";
+
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { createBox } from "./utils.js";
 
 import Raycasting from "./raycaster.js";
 import UI from "./ui.js";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
+let rulerEnabled, labelRenderer, stats;
 
 init();
 render();
 
 function init() {
-
-  UI.on("rulerEnabled", () => {
-    console.log(123);
-  });
-
-  UI.on("rulerCanceled", () => {
-    console.log(321);
-  });
-
-  // ui.on("rulerUItoggled", (state) => {
-  //   console.log(state);
-  // });
-
-  renderer = new THREE.WebGLRenderer();
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
   const aspect = window.innerWidth / window.innerHeight;
 
   cameraPersp = new THREE.PerspectiveCamera(50, aspect, 0.01, 30000);
@@ -50,7 +40,12 @@ function init() {
   light.position.set(1, 1, 1);
   scene.add(light);
 
-  const texture = new THREE.TextureLoader().load('textures/crate.gif', render);
+  renderer = new THREE.WebGLRenderer();
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  const texture = new THREE.TextureLoader().load("textures/crate.gif", render);
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
   const cubeGeometry = new THREE.BoxGeometry(200, 200, 200);
@@ -79,12 +74,13 @@ function init() {
     render();
   }, function (xhr) {
   }, function (error) {
-      console.log('error')
+      console.log("error")
   })
 
   orbit = new OrbitControls(currentCamera, renderer.domElement);
+  orbit.enableDamping = true;
   orbit.update();
-  orbit.addEventListener('change', render);
+  orbit.addEventListener("change", render);
 
   const cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
   cubeMesh.position.z = 200;
@@ -110,7 +106,7 @@ function init() {
   cubeMesh.userData.scale = Object.assign({}, cubeMesh.scale);
   scene.add(sphereMesh);
 
-  window.addEventListener('resize', onWindowResize);
+  window.addEventListener("resize", onWindowResize);
 
   // Передаем в в элементы управления сцену, камеру, рендерер
 
@@ -124,13 +120,136 @@ function init() {
   }, 
   (intersation) => {
     if (intersation) {
-      console.log(intersation)
+      clickedObject = intersation;
       return;
     }
     clickedObject = null;
     
     render();
   });
+
+  // RULER
+  UI.on("rulerEnabled", () => {
+    orbit.enabled = false;
+    rulerEnabled = true;
+  });
+
+  UI.on("rulerCanceled", () => {
+    orbit.enabled = true;
+    rulerEnabled = false;
+    resetLine();
+  });
+
+  let lineId = 0,
+    line,
+    drawingLine = false,
+    measurementLabels = {},
+    mouse = new THREE.Vector2();
+  
+  labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.domElement.style.position = "absolute";
+  labelRenderer.domElement.style.top = "0px";
+  labelRenderer.domElement.style.pointerEvents = "none";
+  document.body.appendChild(labelRenderer.domElement);
+
+  window.addEventListener('keyup', function (event) {
+    if (rulerEnabled) {
+      if (drawingLine) {
+        resetLine();
+      }
+    }
+  });
+
+  function resetLine() {
+    scene.remove(line);
+    scene.remove(measurementLabels[lineId]);
+    drawingLine = false;
+  }
+
+  renderer.domElement.addEventListener('pointerdown', onClick, false);
+  function onClick() {
+    if (!rulerEnabled || !clickedObject) {
+      return;
+    }
+    console.log(clickedObject);
+    if (rulerEnabled) {
+      const points = [];
+      points.push(clickedObject.point);
+      points.push(clickedObject.point.clone());
+      const geometry = new THREE.BufferGeometry().setFromPoints(
+        points
+      );
+      line = new THREE.LineSegments(
+        geometry,
+        new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.75,
+          // depthTest: false,
+          // depthWrite: false
+        })
+      );
+      line.frustumCulled = false;
+      scene.add(line);
+
+      const measurementDiv = document.createElement(
+        'div'
+      );
+      measurementDiv.className = 'measurementLabel';
+      measurementDiv.innerText = '0.0m';
+      const measurementLabel = new CSS2DObject(measurementDiv);
+      measurementLabel.position.copy(clickedObject.point);
+      measurementLabels[lineId] = measurementLabel;
+      scene.add(measurementLabels[lineId]);
+      drawingLine = true;
+    } else {
+      const positions = line.geometry.attributes.position.array;
+      positions[3] = clickedObject.point.x;
+      positions[4] = clickedObject.point.y;
+      positions[5] = clickedObject.point.z;
+      line.geometry.attributes.position.needsUpdate = true;
+      lineId++;
+      drawingLine = false;
+    }
+  }
+
+  document.addEventListener('mousemove', onDocumentMouseMove, false);
+  function onDocumentMouseMove(event) {
+    event.preventDefault();
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    if (drawingLine) {
+      if (clickedObject) {
+        const positions = line.geometry.attributes.position.array;
+        const v0 = new THREE.Vector3(
+            positions[0],
+            positions[1],
+            positions[2],
+        );
+        const v1 = new THREE.Vector3(
+            clickedObject.point.x,
+            clickedObject.point.y,
+            clickedObject.point.z,
+        );
+        positions[3] = clickedObject.point.x;
+        positions[4] = clickedObject.point.y;
+        positions[5] = clickedObject.point.z;
+        line.geometry.attributes.position.needsUpdate = true;
+        const distance = v0.distanceTo(v1);
+        measurementLabels[lineId].element.innerText =
+            distance.toFixed(2) + 'm';
+        measurementLabels[lineId].position.lerpVectors(v0, v1, 0.5);
+      }
+    }
+  }
+
+  stats = Stats();
+  document.body.appendChild(stats.dom);
+
+  // RULER END
 
 }
 
@@ -148,8 +267,15 @@ function onWindowResize() {
 }
 
 function render() {
-
   renderer.render(scene, currentCamera);
-  // Box3Helper.update();
-
+  stats.update();
+  labelRenderer.render(scene, currentCamera);
 }
+
+function animate() {
+  requestAnimationFrame(animate);
+  render();
+  stats.update();
+}
+
+animate();

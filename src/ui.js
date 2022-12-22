@@ -28,6 +28,7 @@ const machine = createMachine({
         addEl.classList.add("active");
         rulerEl.classList.add("hidden");
         addEl.setAttribute("data-action", "cancelRuler");
+        document.body.classList.add("creating");
         UI.emit("rulerEnabled");
         // machine.transition(machine.value, "switch");
       },
@@ -35,6 +36,7 @@ const machine = createMachine({
         addEl.classList.remove("active");
         rulerEl.classList.remove("hidden");
         addEl.setAttribute("data-action", "enableRuler");
+        document.body.classList.remove("creating");
         UI.emit("rulerCanceled");
       },
     },
@@ -74,6 +76,13 @@ document.body.addEventListener("click", (event) => {
   
   const state = machine.value;
   machine.action(state, action);
+});
+
+document.body.addEventListener("keyup", (event) => {  
+  const state = machine.value;
+  if (event.key === "Escape") {
+    machine.action(state, "cancelRuler");
+  }
 });
 
 export default UI;

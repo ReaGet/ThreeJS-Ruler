@@ -8,6 +8,10 @@
   --primary: #03a9f4;
 }
 
+body.creating {
+  cursor: crosshair;
+}
+
 .ui-content {
   display: none;
   position: absolute;
