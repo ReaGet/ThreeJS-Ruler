@@ -8,6 +8,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createBox } from './utils.js';
 
 import Raycasting from "./raycaster.js";
+import "./ui.js";
+import emitter from "./emitter.js";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
@@ -16,6 +18,14 @@ init();
 render();
 
 function init() {
+
+  emitter.on("toggleUI", (data) => {
+    console.log(data);
+  });
+
+  // ui.on("rulerUItoggled", (state) => {
+  //   console.log(state);
+  // });
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
