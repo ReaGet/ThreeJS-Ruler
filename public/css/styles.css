@@ -38,6 +38,7 @@
 }
 
 .ui-btn {
+  border-radius: 50%;
   cursor: pointer;
   transition: all .2s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
@@ -65,7 +66,6 @@
   width: 60px;
   height: 60px;
   background-color: #fff;
-  border-radius: 50%;
 }
 
 .ui-btn.add svg {
@@ -85,4 +85,23 @@
 
 .ui-btn.add:hover svg {
   stroke: #fff;
+}
+
+.ui-btn.remove {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgb(255 255 255 / 20%);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: -60px;
+  fill: rgba(255, 255, 255, .4);
+}
+
+.ui-btn.ui-btn.remove svg {
+  fill: rgb(122 122 122 / 64%);
 }

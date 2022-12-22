@@ -5,6 +5,10 @@ const uiContentEl = document.querySelector(".ui-content");
 const rulerEl = document.querySelector(".ui-btn.ruler");
 const addEl = document.querySelector(".ui-btn.add");
 
+const UI = {
+  ...emitter,
+};
+
 const machine = createMachine({
   initialState: "off",
   off: {
@@ -21,8 +25,18 @@ const machine = createMachine({
         uiContentEl.classList.toggle("active");
       },
       enableRuler(machine) {
-        machine.transition(machine.value, "switch");
-      }
+        addEl.classList.add("active");
+        rulerEl.classList.add("hidden");
+        addEl.setAttribute("data-action", "cancelRuler");
+        UI.emit("rulerEnabled");
+        // machine.transition(machine.value, "switch");
+      },
+      cancelRuler() {
+        addEl.classList.remove("active");
+        rulerEl.classList.remove("hidden");
+        addEl.setAttribute("data-action", "enableRuler");
+        UI.emit("rulerCanceled");
+      },
     },
     transitions: {
       switch: {
@@ -37,9 +51,7 @@ const machine = createMachine({
     actions: {
       onEnter() {
         console.log("on: onEnter");
-        addEl.classList.add("active");
-        rulerEl.classList.add("hidden");
-        emitter.emit("creating");
+        UI.emit("creating");
       },
       onExit() {
         console.log("on: onExit");
@@ -63,3 +75,5 @@ document.body.addEventListener("click", (event) => {
   const state = machine.value;
   machine.action(state, action);
 });
+
+export default UI;

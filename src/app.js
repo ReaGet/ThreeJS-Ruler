@@ -8,8 +8,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createBox } from './utils.js';
 
 import Raycasting from "./raycaster.js";
-import "./ui.js";
-import emitter from "./emitter.js";
+import UI from "./ui.js";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
@@ -19,8 +18,12 @@ render();
 
 function init() {
 
-  emitter.on("toggleUI", (data) => {
-    console.log(data);
+  UI.on("rulerEnabled", () => {
+    console.log(123);
+  });
+
+  UI.on("rulerCanceled", () => {
+    console.log(321);
   });
 
   // ui.on("rulerUItoggled", (state) => {
