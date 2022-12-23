@@ -22,6 +22,7 @@ body.creating {
   display: none;
   position: absolute;
   left: 50%;
+  z-index: 10;
   transform: translateX(-50%);
   bottom: 150px;
   /* background-color: rgba(255, 255, 255, 0.2); */
