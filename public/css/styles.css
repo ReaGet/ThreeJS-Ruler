@@ -12,6 +12,12 @@ body.creating {
   cursor: crosshair;
 }
 
+.measurementLabel {
+  font-family: monospace;
+  background-color: black;
+  color: white;
+}
+
 .ui-content {
   display: none;
   position: absolute;

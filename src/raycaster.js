@@ -5,7 +5,7 @@ const clickMouse = new THREE.Vector2();
 let dragging = false;
 let mousePrev = [];
 
-export default function Raycasting(camera, scene, getBoxes, callback) {
+export default function Raycasting(camera, scene, getBoxes, callback, returnIntersactionPoint) {
   window.addEventListener("mousedown", (event) => {
     dragging = false;
   });
@@ -26,16 +26,16 @@ export default function Raycasting(camera, scene, getBoxes, callback) {
     clickMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(clickMouse, camera);
-    let found = raycaster.intersectObjects(scene.children);
-    let intersation = found.filter((item) => item.object.userData.interactive)[0]?.object;
+    let intersation = raycaster.intersectObjects(scene.children);
+    let model = found.filter((item) => item.object.userData.interactive)[0]?.object;
     // console.log(raycaster.intersectObjects(scene.children));
 
     if (!intersation) {
       const boxes = getBoxes();
       for (let box of boxes) {
         if (raycaster.ray.intersectsBox(box)) {
-          intersation = box.model;
-          found = raycaster.intersectObjects(box.model);
+          model = box.model;
+          intersation = raycaster.intersectObjects(box.model);
           // console.log(box)
           // intersation.userData.parent = box;
           // console.log(intersation)
@@ -43,6 +43,6 @@ export default function Raycasting(camera, scene, getBoxes, callback) {
       }
     }
 
-    callback(found[0]);
+    callback(returnIntersactionPoint ? intersation[0] : model);
   });
 }
