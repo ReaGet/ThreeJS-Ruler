@@ -70,7 +70,8 @@ body.creating {
   opacity: 0.7;
 }
 
-.ui-btn.add {
+.ui-btn.add,
+.ui-btn.accept {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,16 +86,31 @@ body.creating {
   stroke-width: 30;
 }
 
+.ui-btn.accept svg {
+  stroke: #333;
+  stroke-width: 3;
+}
+
+.ui-btn.add svg:last-child {
+  display: none;
+}
+
+.ui-btn.accept svg:first-child {
+  display: none;
+}
+
 .ui-btn.add.active {
   transform: rotateZ(45deg);
 }
 
-.ui-btn.add:hover {
+.ui-btn.add:hover,
+.ui-btn.accept:hover {
   background-color: var(--primary);
   opacity: 1;
 }
 
-.ui-btn.add:hover svg {
+.ui-btn.add:hover svg,
+.ui-btn.accept:hover svg {
   stroke: #fff;
 }
 
@@ -110,7 +126,14 @@ body.creating {
   top: 50%;
   transform: translateY(-50%);
   right: -60px;
-  fill: rgba(255, 255, 255, .4);
+}
+
+.ui-btn.remove.active {
+  background-color: rgb(0 0 0 / 60%);
+}
+
+.ui-btn.ui-btn.remove.active svg {
+  fill: rgb(255 255 255 / 64%);
 }
 
 .ui-btn.ui-btn.remove svg {

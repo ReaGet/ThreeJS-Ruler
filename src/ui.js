@@ -3,11 +3,8 @@ import emitter from "./emitter.js";
 
 const uiContentEl = document.querySelector(".ui-content");
 const rulerEl = document.querySelector(".ui-btn.ruler");
-const addEl = document.querySelector(".ui-btn.add");
-
-const UI = {
-  ...emitter,
-};
+const mainBtn = document.querySelector(".ui-btn.ui-btn--main");
+const removeBtn = document.querySelector(".ui-btn.remove");
 
 const machine = createMachine({
   initialState: "off",
@@ -25,23 +22,23 @@ const machine = createMachine({
         uiContentEl.classList.toggle("active");
       },
       enableRuler(machine) {
-        addEl.classList.add("active");
+        mainBtn.classList.add("active");
         rulerEl.classList.add("hidden");
-        addEl.setAttribute("data-action", "cancelRuler");
+        mainBtn.setAttribute("data-action", "cancelRuler");
         document.body.classList.add("creating");
         UI.emit("rulerEnabled");
         // machine.transition(machine.value, "switch");
       },
       cancelRuler() {
-        addEl.classList.remove("active");
+        mainBtn.classList.remove("active");
         rulerEl.classList.remove("hidden");
-        addEl.setAttribute("data-action", "enableRuler");
+        mainBtn.setAttribute("data-action", "enableRuler");
         document.body.classList.remove("creating");
         UI.emit("rulerCanceled");
       },
     },
     transitions: {
-      switch: {
+      startCreating: {
         target: "creating",
         action() {
           console.log("transition action for 'switch' in 'off' state");
@@ -53,14 +50,36 @@ const machine = createMachine({
     actions: {
       onEnter() {
         console.log("on: onEnter");
+        mainBtn.classList.remove("add");
+        mainBtn.classList.add("accept");
+        removeBtn.classList.add("active");
         UI.emit("creating");
       },
       onExit() {
         console.log("on: onExit");
+        mainBtn.classList.add("add");
+        mainBtn.classList.remove("accept");
+        removeBtn.classList.remove("active");
+      },
+      removeLines(machine) {
+        mainBtn.classList.remove("active");
+        rulerEl.classList.remove("hidden");
+        mainBtn.setAttribute("data-action", "enableRuler");
+        document.body.classList.remove("creating");
+        machine.transition(machine.value, "stopCreating");
+        UI.emit("removeLine");
+      },
+      cancelRuler(machine) {
+        mainBtn.classList.remove("active");
+        rulerEl.classList.remove("hidden");
+        mainBtn.setAttribute("data-action", "enableRuler");
+        document.body.classList.remove("creating");
+        machine.transition(machine.value, "stopCreating");
+        UI.emit("rulerCanceled");
       },
     },
     transitions: {
-      switch: {
+      stopCreating: {
         target: "off",
         action() {
           console.log("transition action for 'switch' in 'on' state");
@@ -84,5 +103,13 @@ document.body.addEventListener("keyup", (event) => {
     machine.action(state, "cancelRuler");
   }
 });
+
+const UI = {
+  ...emitter,
+  set(action) {
+    const state = machine.value;
+    machine.transition(state, action);
+  },
+};
 
 export default UI;

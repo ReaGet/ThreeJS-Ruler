@@ -145,6 +145,12 @@ function init() {
     }
   });
 
+  UI.on("removeLine", () => {
+    orbit.enabled = true;
+    rulerEnabled = false;
+    removeLine();
+  });
+
   let lineId = 0,
     line,
     drawingLine = false,
@@ -188,6 +194,17 @@ function init() {
     linesCache = [];
   }
 
+  function removeLine() {
+    scene.remove(line);
+    removeFromScene(pointsCache);
+    removeFromScene(labelsCache);
+    removeFromScene(linesCache);
+  }
+
+  function removeFromScene(arr) {
+    arr.forEach((item) => scene.remove(item));
+  }
+
   function finishLine() {
     const positions = line.geometry.attributes.position.array;
     positions[3] = intersects.point.x;
@@ -207,7 +224,6 @@ function init() {
 
   renderer.domElement.addEventListener('mouseup', onClick, false);
   function onClick(event) {
-    console.log();
     if (dragging || event.which !== 1 || !rulerEnabled) {
       return;
     }
@@ -255,6 +271,14 @@ function init() {
       scene.add(measurementLabels[lineId]);
       drawingLine = true;
     // }
+
+    if (pointsCache.length > 1) {
+      console.log(222);
+      UI.set("startCreating");
+    } else {
+      console.log(333);
+      UI.set("stopCreating");
+    }
 
   }
 
