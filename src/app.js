@@ -46,6 +46,7 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  {
   const texture = new THREE.TextureLoader().load("textures/crate.gif");
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
@@ -128,6 +129,7 @@ function init() {
   scene.add(plane);
 
   window.addEventListener("resize", onWindowResize);
+  }
 
   // RULER
   UI.on("rulerEnabled", () => {
@@ -138,7 +140,7 @@ function init() {
   UI.on("rulerCanceled", () => {
     orbit.enabled = true;
     rulerEnabled = false;
-    if (pointsCache.length > 1) {
+    if (creating.segment.points.length > 1) {
       finishLine();
     } else {
       resetLine();
@@ -151,22 +153,20 @@ function init() {
     removeLine();
   });
 
-  let lineId = 0,
-    line,
-    drawingLine = false,
-    measurementLabels = {},
+  let drawingLine = false,
     mouse = new THREE.Vector2();
 
   const lines = [];
-  // let line = [];
-  let pointsCache = [];
-  let labelsCache = [];
-  let linesCache = [];
+  const creating = {
+    segment: {
+      line: null,
+      label: null,
+      points: [],
+    },
+  };
   let intersects = null;
-  // let drawingLine = false;
   let mousePrev = [];
   let dragging = false;
-  // let mouse = new THREE.Vector2();
   
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -175,30 +175,19 @@ function init() {
   labelRenderer.domElement.style.pointerEvents = "none";
   document.body.appendChild(labelRenderer.domElement);
 
-  // window.addEventListener('keyup', function (event) {
-  //   if (rulerEnabled) {
-  //     if (drawingLine) {
-  //       resetLine();
-  //     }
-  //   }
-  // });
-
   function resetLine() {
-    scene.remove(line);
-    scene.remove(measurementLabels[lineId]);
-    scene.remove(pointsCache.at(0));
-    scene.remove(labelsCache.at(0));
+    scene.remove(creating.segment.line);
+    scene.remove(creating.segment.label);
+    scene.remove(creating.points.at(0));
+    scene.remove(creating.labels.at(0));
     drawingLine = false;
-    pointsCache = [];
-    labelsCache = [];
-    linesCache = [];
   }
 
   function removeLine() {
-    scene.remove(line);
-    removeFromScene(pointsCache);
-    removeFromScene(labelsCache);
-    removeFromScene(linesCache);
+    scene.remove(creating.segment);
+    removeFromScene(creating.points);
+    removeFromScene(creating.labels);
+    removeFromScene(creating.lines);
   }
 
   function removeFromScene(arr) {
@@ -206,20 +195,56 @@ function init() {
   }
 
   function finishLine() {
-    const positions = line.geometry.attributes.position.array;
+    const positions = creating.segment.line.geometry.attributes.position.array;
     positions[3] = intersects.point.x;
     positions[4] = intersects.point.y;
     positions[5] = intersects.point.z;
-    line.geometry.attributes.position.needsUpdate = true;
-    lineId++;
+    creating.segment.line.geometry.attributes.position.needsUpdate = true;
     drawingLine = false;
-    if (linesCache.length + 1 !== pointsCache.length) {
-      scene.remove(linesCache.at(linesCache.length - 1));
-      scene.remove(labelsCache.at(labelsCache.length - 1));
+    if (creating.lines.length + 1 !== creating.points.length) {
+      scene.remove(creating.segment.line);
+      scene.remove(creating.segment.label);
     }
-    pointsCache = [];
-    labelsCache = [];
-    linesCache = [];
+    // creating.points = [];
+    // creating.lines = [];
+  }
+  
+  function createDot(point) {
+    const dotGeometry = new THREE.SphereGeometry(5, 32, 16);
+    const dotMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+    dot.position.copy(point);
+    return dot;
+  }
+
+  function createLine(point) {
+    const points = [];
+    points.push(point);
+    points.push(point.clone());
+    const geometry = new THREE.BufferGeometry().setFromPoints(
+      points
+    );
+    const line = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.75,
+      })
+    );
+    line.frustumCulled = false;
+    return line;
+  }
+
+  function createLabel(point) {
+    const measurementDiv = document.createElement(
+      'div'
+    );
+    measurementDiv.className = 'measurementLabel';
+    measurementDiv.innerText = '0.0m';
+    const measurementLabel = new CSS2DObject(measurementDiv);
+    measurementLabel.position.copy(point);
+    return measurementLabel;
   }
 
   renderer.domElement.addEventListener('mouseup', onClick, false);
@@ -227,52 +252,23 @@ function init() {
     if (dragging || event.which !== 1 || !rulerEnabled) {
       return;
     }
-    // if (!rulerEnabled && !clickedObject) {
-    //   return;
-    // }
-    // if (!drawingLine) {
-      intersects = cast(mouse, currentCamera, scene, boxes);
-      const dotGeometry = new THREE.SphereGeometry(5, 32, 16);
-      const dotMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
-      const dot = new THREE.Mesh(dotGeometry, dotMaterial);
-      dot.position.copy(intersects.point);
-      scene.add(dot);
-      pointsCache.push(dot);
 
-      const points = [];
-      points.push(intersects.point);
-      points.push(intersects.point.clone());
-      const geometry = new THREE.BufferGeometry().setFromPoints(
-        points
-      );
-      line = new THREE.LineSegments(
-        geometry,
-        new THREE.LineBasicMaterial({
-          color: 0xffffff,
-          transparent: true,
-          opacity: 0.75,
-          // depthTest: false,
-          // depthWrite: false
-        })
-      );
-      line.frustumCulled = false;
-      linesCache.push(line);
-      scene.add(line)
+    if (creating.segment.line) {
+    }
+  
+    intersects = cast(mouse, currentCamera, scene, boxes);
+    const dot = createDot(intersects.point);
+    creating.segment.points.push(dot);
+    scene.add(dot);
 
-      const measurementDiv = document.createElement(
-        'div'
-      );
-      measurementDiv.className = 'measurementLabel';
-      measurementDiv.innerText = '0.0m';
-      const measurementLabel = new CSS2DObject(measurementDiv);
-      measurementLabel.position.copy(intersects.point);
-      measurementLabels[lineId] = measurementLabel;
-      labelsCache.push(measurementLabel);
-      scene.add(measurementLabels[lineId]);
-      drawingLine = true;
-    // }
+    creating.segment.line = createLine(intersects.point);
+    scene.add(creating.segment.line)
 
-    if (pointsCache.length > 1) {
+    creating.segment.label = createLabel(intersects.point);
+    scene.add(creating.segment.label);
+    drawingLine = true;
+
+    if (creating.segment.points.length > 1) {
       console.log(222);
       UI.set("startCreating");
     } else {
@@ -298,59 +294,30 @@ function init() {
     if (drawingLine) {
       intersects = cast(mouse, currentCamera, scene, boxes);
       if (intersects) {
-        const positions = line.geometry.attributes.position.array;
+        const positions = creating.segment.line.geometry.attributes.position.array;
         const v0 = new THREE.Vector3(
             positions[0],
             positions[1],
             positions[2]
-        )
+        );
         const v1 = new THREE.Vector3(
             intersects.point.x,
             intersects.point.y,
             intersects.point.z
-        )
-        positions[3] = intersects.point.x
-        positions[4] = intersects.point.y
-        positions[5] = intersects.point.z
-        line.geometry.attributes.position.needsUpdate = true
-        const distance = v0.distanceTo(v1)
-        measurementLabels[lineId].element.innerText =
-            distance.toFixed(2) + 'm'
-        measurementLabels[lineId].position.lerpVectors(v0, v1, 0.5)
+        );
+        positions[3] = intersects.point.x;
+        positions[4] = intersects.point.y;
+        positions[5] = intersects.point.z;
+        creating.segment.line.geometry.attributes.position.needsUpdate = true;
+        const distance = v0.distanceTo(v1);
+        // measurementLabels[lineId].element.innerText =
+        //     distance.toFixed(2) + 'm'
+        // measurementLabels[lineId].position.lerpVectors(v0, v1, 0.5);
+        creating.segment.label.element.innerText = distance.toFixed(2) + 'm';
+        creating.segment.label.position.lerpVectors(v0, v1, 0.5);
       }
     }
   }
-  // document.addEventListener('mousemove', onDocumentMouseMove, false);
-  // function onDocumentMouseMove(event) {
-  //   event.preventDefault();
-
-  //   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  //   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  //   if (drawingLine) {
-  //     if (clickedObject) {
-  //       const positions = line.geometry.attributes.position.array;
-  //       const v0 = new THREE.Vector3(
-  //           positions[0],
-  //           positions[1],
-  //           positions[2],
-  //       );
-  //       const v1 = new THREE.Vector3(
-  //           clickedObject.point.x,
-  //           clickedObject.point.y,
-  //           clickedObject.point.z,
-  //       );
-  //       positions[3] = clickedObject.point.x;
-  //       positions[4] = clickedObject.point.y;
-  //       positions[5] = clickedObject.point.z;
-  //       line.geometry.attributes.position.needsUpdate = true;
-  //       const distance = v0.distanceTo(v1);
-  //       measurementLabels[lineId].element.innerText =
-  //           distance.toFixed(2) + 'm';
-  //       measurementLabels[lineId].position.lerpVectors(v0, v1, 0.5);
-  //     }
-  //   }
-  // }
 
   stats = Stats();
   document.body.appendChild(stats.dom);
