@@ -140,11 +140,8 @@ function init() {
   UI.on("rulerCanceled", () => {
     orbit.enabled = true;
     rulerEnabled = false;
-    if (creating.segment.points.length > 1) {
-      finishLine();
-    } else {
-      resetLine();
-    }
+    
+    finishLine();
   });
 
   UI.on("removeLine", () => {
@@ -176,32 +173,47 @@ function init() {
   labelRenderer.domElement.style.pointerEvents = "none";
   document.body.appendChild(labelRenderer.domElement);
 
-  function resetLine() {
-    scene.remove(creating.segment.line);
-    scene.remove(creating.segment.label);
-    // scene.remove(creating.points.at(0));
-    // scene.remove(creating.labels.at(0));
-    drawingLine = false;
-  }
-
   function removeLine() {
-    scene.remove(creating.segment.line);
-    scene.remove(creating.segment.label);
-    console.log(creating);
+    removeFromScene(creating.segment.line);
+    removeFromScene(creating.segment.label);
     removeFromScene(creating.segment.points);
+    for (let line of creating.lines) {
+      for (let key in line) {
+        removeFromScene(line[key]);
+      }
+    }
+    drawingLine = false;
+    resetSegment();
   }
 
-  function removeFromScene(arr) {
-    arr.forEach((item) => scene.remove(item));
+  function removeFromScene(element) {
+    if (Array.isArray(element)) {
+      element.forEach((item) => removeFromScene(item));
+    } else {
+      const object = scene.getObjectByProperty("uuid", element.uuid);
+      scene.remove(object);
+      scene.remove(element);
+    }
   }
 
   function finishLine() {
-    const positions = creating.segment.line.geometry.attributes.position.array;
-    positions[3] = intersects.point.x;
-    positions[4] = intersects.point.y;
-    positions[5] = intersects.point.z;
-    creating.segment.line.geometry.attributes.position.needsUpdate = true;
+    if (creating.segment.points.length === 1) {
+      scene.remove(creating.segment.line);
+      scene.remove(creating.segment.label);
+      if (creating.lines.length === 0) {
+        removeFromScene(creating.segment.points);
+      }
+    }
+    lines.push(...creating.lines);
+    resetSegment();
     drawingLine = false;
+  }
+
+  function resetSegment() {
+    creating.segment.line = null;
+    creating.segment.label = null;
+    creating.segment.points = [];
+    creating.lines = [];
   }
   
   function createDot(point) {
@@ -249,11 +261,14 @@ function init() {
       if (Array.isArray(object)) {
         let array = [];
         for (let item of object) {
-          array.push(item.clone());
+          const el = item.clone();
+          el.uuid = item.uuid;
+          array.push(el);
         }
         segment[key] = array;
       } else {
         segment[key] = creating.segment[key].clone();
+        segment[key].uuid = creating.segment[key].uuid;
       }
     }
     creating.segment.line = null;
@@ -271,6 +286,12 @@ function init() {
     const dot = createDot(intersects.point);
     creating.segment.points.push(dot);
     scene.add(dot);
+    
+    if (creating.segment.points.length === 2) {
+      const line = copyResetSegment();
+      creating.lines.push(line);
+      creating.segment.points.push(dot);
+    }
 
     creating.segment.line = createLine(intersects.point);
     scene.add(creating.segment.line);
@@ -279,18 +300,10 @@ function init() {
     scene.add(creating.segment.label);
     drawingLine = true;
 
-    if (creating.lines.length > 0 && creating.segment.points === 2) {
-      console.log("startCreating");
+    if (creating.lines.length > 0) {
       UI.set("startCreating");
     } else {
-      console.log("stopCreating");
       UI.set("stopCreating");
-    }
-    
-    if (creating.segment.points.length === 2) {
-      const line = copyResetSegment();
-      creating.lines.push(line);
-      creating.segment.points.push(dot);
     }
 
   }
@@ -327,9 +340,6 @@ function init() {
         positions[5] = intersects.point.z;
         creating.segment.line.geometry.attributes.position.needsUpdate = true;
         const distance = v0.distanceTo(v1);
-        // measurementLabels[lineId].element.innerText =
-        //     distance.toFixed(2) + 'm'
-        // measurementLabels[lineId].position.lerpVectors(v0, v1, 0.5);
         creating.segment.label.element.innerText = distance.toFixed(2) + 'm';
         creating.segment.label.position.lerpVectors(v0, v1, 0.5);
       }
