@@ -14,7 +14,7 @@ import Stats from "three/addons/stats.module.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createBox } from "./utils.js";
 
-import cast from "./raycaster.js";
+import { cast, castExceptDot } from "./raycaster.js";
 import UI from "./ui.js";
 
 let cameraPersp, currentCamera;
@@ -165,6 +165,7 @@ function init() {
   let intersects = null;
   let mousePrev = [];
   let dragging = false;
+  let mouseClicked = false;
   
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -220,6 +221,7 @@ function init() {
     const dotGeometry = new THREE.SphereGeometry(5, 32, 16);
     const dotMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
     const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+    dot.userData.line = true;
     dot.position.copy(point);
     return dot;
   }
@@ -279,6 +281,10 @@ function init() {
 
   renderer.domElement.addEventListener('mouseup', onClick, false);
   function onClick(event) {
+    if (clickedDot) {
+      orbit.enabled = true;
+      clickedDot = null;
+    }
     if (dragging || event.which !== 1 || !rulerEnabled) {
       return;
     }
@@ -306,11 +312,24 @@ function init() {
       UI.set("stopCreating");
     }
 
+    mouseClicked = false;
   }
+
+  let clickedDot = null;
 
   document.addEventListener('mousedown', onDocumentMouseDown, false);
   function onDocumentMouseDown() {
+    mouseClicked = true;
     dragging = false;
+    if (drawingLine) {
+      return;
+    }
+    clickedDot = cast(mouse, currentCamera, scene, boxes, true);
+    if (clickedDot) {
+      orbit.enabled = false;
+    }
+    console.log(clickedDot)
+    
   }
 
   document.addEventListener('mousemove', onDocumentMouseMove, false);
@@ -320,6 +339,15 @@ function init() {
     if (mouse.x !== mousePrev[0] && mouse.y !== mousePrev[1]) {
       mousePrev = [mouse.x, mouse.y];
       dragging = true;
+    }
+    // console.log(clickedDot)
+    if (clickedDot) {
+      // console.log(clickedDot);
+      // clickedDot.position.setXYZ(mouse.x, mouse.y, 0);
+      const target = castExceptDot(mouse, currentCamera, scene, boxes);
+      console.log(target);
+      target && clickedDot.position.set(target.point.x, target.point.y, target.point.z);
+      target && (clickedDot.position.needsUpdate = true);
     }
     if (drawingLine) {
       intersects = cast(mouse, currentCamera, scene, boxes);
@@ -362,21 +390,21 @@ function onWindowResize() {
 
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  // render();
+  render();
 
 }
 
 function render() {
   renderer.render(scene, currentCamera);
+  orbit.update();
   stats.update();
+  labelRenderer.render(scene, currentCamera);
 }
 
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, currentCamera);
-  orbit.update();
-  stats.update();
-  labelRenderer.render(scene, currentCamera);
+  render();
 }
 
 animate();
