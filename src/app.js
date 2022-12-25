@@ -163,6 +163,7 @@ function init() {
       label: null,
       points: [],
     },
+    lines: [],
   };
   let intersects = null;
   let mousePrev = [];
@@ -178,16 +179,16 @@ function init() {
   function resetLine() {
     scene.remove(creating.segment.line);
     scene.remove(creating.segment.label);
-    scene.remove(creating.points.at(0));
-    scene.remove(creating.labels.at(0));
+    // scene.remove(creating.points.at(0));
+    // scene.remove(creating.labels.at(0));
     drawingLine = false;
   }
 
   function removeLine() {
-    scene.remove(creating.segment);
-    removeFromScene(creating.points);
-    removeFromScene(creating.labels);
-    removeFromScene(creating.lines);
+    scene.remove(creating.segment.line);
+    scene.remove(creating.segment.label);
+    console.log(creating);
+    removeFromScene(creating.segment.points);
   }
 
   function removeFromScene(arr) {
@@ -201,12 +202,6 @@ function init() {
     positions[5] = intersects.point.z;
     creating.segment.line.geometry.attributes.position.needsUpdate = true;
     drawingLine = false;
-    if (creating.lines.length + 1 !== creating.points.length) {
-      scene.remove(creating.segment.line);
-      scene.remove(creating.segment.label);
-    }
-    // creating.points = [];
-    // creating.lines = [];
   }
   
   function createDot(point) {
@@ -247,33 +242,55 @@ function init() {
     return measurementLabel;
   }
 
+  function copyResetSegment() {
+    const segment = {};
+    for (let key in creating.segment) {
+      let object = creating.segment[key];
+      if (Array.isArray(object)) {
+        let array = [];
+        for (let item of object) {
+          array.push(item.clone());
+        }
+        segment[key] = array;
+      } else {
+        segment[key] = creating.segment[key].clone();
+      }
+    }
+    creating.segment.line = null;
+    creating.segment.points = [];
+    creating.segment.label = null;
+    return segment;
+  }
+
   renderer.domElement.addEventListener('mouseup', onClick, false);
   function onClick(event) {
     if (dragging || event.which !== 1 || !rulerEnabled) {
       return;
     }
-
-    if (creating.segment.line) {
-    }
-  
     intersects = cast(mouse, currentCamera, scene, boxes);
     const dot = createDot(intersects.point);
     creating.segment.points.push(dot);
     scene.add(dot);
 
     creating.segment.line = createLine(intersects.point);
-    scene.add(creating.segment.line)
+    scene.add(creating.segment.line);
 
     creating.segment.label = createLabel(intersects.point);
     scene.add(creating.segment.label);
     drawingLine = true;
 
-    if (creating.segment.points.length > 1) {
-      console.log(222);
+    if (creating.lines.length > 0 && creating.segment.points === 2) {
+      console.log("startCreating");
       UI.set("startCreating");
     } else {
-      console.log(333);
+      console.log("stopCreating");
       UI.set("stopCreating");
+    }
+    
+    if (creating.segment.points.length === 2) {
+      const line = copyResetSegment();
+      creating.lines.push(line);
+      creating.segment.points.push(dot);
     }
 
   }
