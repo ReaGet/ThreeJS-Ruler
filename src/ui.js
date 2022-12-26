@@ -11,7 +11,7 @@ const machine = createMachine({
   off: {
     actions: {
       onEnter() {
-        console.log("off: onEnter");
+        console.log("off: onEnter off");
         rulerEl.classList.remove("hidden");
       },
       onExit() {
@@ -41,15 +41,21 @@ const machine = createMachine({
       startCreating: {
         target: "creating",
         action() {
-          console.log("transition action for 'switch' in 'off' state");
+          console.log("transition action for 'startCreating' in 'off' state");
         },
       },
+      startEditing: {
+        target: "editing",
+        action() {
+
+        }
+      }
     },
   },
   creating: {
     actions: {
       onEnter() {
-        console.log("on: onEnter");
+        console.log("on: onEnter creating");
         mainBtn.classList.remove("add");
         mainBtn.classList.add("accept");
         removeBtn.classList.add("active");
@@ -61,7 +67,7 @@ const machine = createMachine({
         mainBtn.classList.remove("accept");
         removeBtn.classList.remove("active");
       },
-      removeLines(machine) {
+      removeLine(machine) {
         mainBtn.classList.remove("active");
         rulerEl.classList.remove("hidden");
         mainBtn.setAttribute("data-action", "enableRuler");
@@ -82,11 +88,49 @@ const machine = createMachine({
       stopCreating: {
         target: "off",
         action() {
-          console.log("transition action for 'switch' in 'on' state");
+          console.log("transition action for 'stopCreating' in 'on' state");
         },
       },
     },
   },
+  editing: {
+    actions: {
+      onEnter() {
+        removeBtn.classList.add("active");
+        mainBtn.classList.add("disabled");
+      },
+      onExit() {
+
+      },
+      enableRuler(machine) {
+        machine.transition(machine.value, "startOff");
+      },
+      removeLine(machine) {
+        mainBtn.classList.remove("active");
+        rulerEl.classList.remove("hidden");
+        mainBtn.setAttribute("data-action", "enableRuler");
+        document.body.classList.remove("creating");
+        machine.transition(machine.value, "startOff");
+        UI.emit("removeLine");
+      },
+    },
+    transitions: {
+      startOff: {
+        target: "off",
+        action(machine) {
+          console.log("transition action for 'startOff' in 'on' state");
+          mainBtn.classList.remove("disabled");
+          removeBtn.classList.remove("active");
+        }
+      },
+      startCreating: {
+        target: "creating",
+        action() {
+          console.log("transition action for 'startCreating' in 'on' state");
+        }
+      }
+    }
+  }
 });
 
 document.body.addEventListener("click", (event) => {
@@ -94,6 +138,7 @@ document.body.addEventListener("click", (event) => {
   const action = clicked && clicked.getAttribute("data-action");
   
   const state = machine.value;
+  console.log(state, action);
   machine.action(state, action);
 });
 

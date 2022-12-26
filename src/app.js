@@ -16,7 +16,6 @@ import { createBox } from "./utils.js";
 
 import { cast, castExceptDot } from "./raycaster.js";
 import UI from "./ui.js";
-import { LuminanceFormat } from "three";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
@@ -120,7 +119,7 @@ function init() {
   scene.add(sphereMesh);
 
   const planeGeometry = new THREE.PlaneGeometry(2000, 2000, 8, 8);
-  const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide });
+  const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xe5e5e5, side: THREE.DoubleSide });
   planeMaterial.polygonOffset = true;
   planeMaterial.polygonOffsetUnits = 1;
   planeMaterial.polygonOffsetFactor = 1;
@@ -148,6 +147,7 @@ function init() {
   UI.on("removeLine", () => {
     orbit.enabled = true;
     rulerEnabled = false;
+    console.log(222);
     removeLine();
   });
 
@@ -179,11 +179,12 @@ function init() {
   document.body.appendChild(labelRenderer.domElement);
 
   function removeLine() {
+    console.log(selectedLineStructure);
     removeFromScene(creating.segment.line);
     removeFromScene(creating.segment.label);
     removeFromScene(creating.segment.points.a);
     removeFromScene(creating.segment.points.b);
-    for (let line of creating.lines) {
+    for (let line of selectedLineStructure) {
       for (let key in line) {
         if (key === "points") {
           removeFromScene(line[key].a);
@@ -263,7 +264,7 @@ function init() {
       'div'
     );
     measurementDiv.className = 'measurementLabel';
-    measurementDiv.innerText = '0.0m';
+    measurementDiv.innerText = '0.0 units';
     const measurementLabel = new CSS2DObject(measurementDiv);
     measurementLabel.position.copy(point);
     return measurementLabel;
@@ -305,7 +306,7 @@ function init() {
     positions[offset + 2] = clickedPoint.position.z;
 
     const val = calcDistance(positions);
-    label.element.innerText = val.d.toFixed(2) + 'm';
+    label.element.innerText = val.d.toFixed(2) + ' units';
     label.position.lerpVectors(val.v0, val.v1, 0.5);
   }
 
@@ -379,6 +380,7 @@ function init() {
           );
         });
         if (linesToUpdate.length > 0) {
+          UI.set("startEditing");
           selectedLineStructure = lines[i];
           setLineStructureSelected(true);
           break;
@@ -386,6 +388,7 @@ function init() {
       }
     } else {
       if (selectedLineStructure) {
+        UI.set("startOff");
         setLineStructureSelected(false);
       }
     }
@@ -427,7 +430,7 @@ function init() {
         creating.segment.line.geometry.attributes.position.needsUpdate = true;
         const val = calcDistance(positions);
         // const distance = v0.distanceTo(v1);
-        creating.segment.label.element.innerText = val.d.toFixed(2) + 'm';
+        creating.segment.label.element.innerText = val.d.toFixed(2) + ' units';
         creating.segment.label.position.lerpVectors(val.v0, val.v1, 0.5);
       }
     }
@@ -473,7 +476,7 @@ function onWindowResize() {
 
 function render() {
   renderer.render(scene, currentCamera);
-  orbit.update();
+  // orbit.update();
   stats.update();
   labelRenderer.render(scene, currentCamera);
 }

@@ -103,6 +103,11 @@ body.creating {
   transform: rotateZ(45deg);
 }
 
+.ui-btn--main.disabled {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .ui-btn.add:hover,
 .ui-btn.accept:hover {
   background-color: var(--primary);
