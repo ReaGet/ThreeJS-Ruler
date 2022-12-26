@@ -44,4 +44,10 @@
     <path d="M6.29,18.21l5,5a1,1,0,0,0,1.42,0l13-13a1,1,0,0,0,0-1.42L12,22.5,6.29,16.79A1,1,0,0,0,6.29,18.21Z" />
   </symbol>
 
+  <symbol id="history" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 15H3v-5" />
+    <path d="M5 13c5-5 12.575-4.275 16 1" />
+    <path stroke-linecap="round" d="M3 15l2-2" />
+  </symbol>
+
 </svg>

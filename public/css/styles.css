@@ -48,7 +48,36 @@ body.creating {
   align-items: center;
 }
 
+.ui-buttons {
+  position: relative;
+}
+
+.ui-buttons__history {
+  display: flex;
+  position: absolute;
+  left: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ui-buttons__history .ui-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.ui-buttons__history .ui-btn + .ui-btn {
+  margin-left: 10px;
+}
+
+.ui-buttons__history .ui-btn--redo {
+  transform: scaleX(-1);
+}
+
 .ui-btn {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   cursor: pointer;
   transition: all .2s cubic-bezier(0.075, 0.82, 0.165, 1);
@@ -81,7 +110,6 @@ body.creating {
 }
 
 .ui-btn.add svg {
-  /* fill: #333; */
   stroke: #333;
   stroke-width: 30;
 }
@@ -122,10 +150,6 @@ body.creating {
 .ui-btn.remove {
   width: 50px;
   height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
   background-color: rgb(255 255 255 / 20%);
   position: absolute;
   top: 50%;
