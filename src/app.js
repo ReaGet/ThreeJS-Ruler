@@ -119,7 +119,7 @@ function init() {
   scene.add(sphereMesh);
 
   const planeGeometry = new THREE.PlaneGeometry(2000, 2000, 8, 8);
-  const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xe5e5e5, side: THREE.DoubleSide });
+  const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xb5b5b5, side: THREE.DoubleSide });
   planeMaterial.polygonOffset = true;
   planeMaterial.polygonOffsetUnits = 1;
   planeMaterial.polygonOffsetFactor = 1;
@@ -169,7 +169,6 @@ function init() {
   let intersects = null;
   let mousePrev = [];
   let dragging = false;
-  let mouseClicked = false;
   
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -354,8 +353,6 @@ function init() {
     } else {
       UI.set("stopCreating");
     }
-
-    mouseClicked = false;
   }
 
   let linesToUpdate = [];
@@ -364,7 +361,6 @@ function init() {
 
   document.addEventListener('mousedown', onMouseDown, false);
   function onMouseDown() {
-    mouseClicked = true;
     dragging = false;
     if (drawingLine) {
       return;
