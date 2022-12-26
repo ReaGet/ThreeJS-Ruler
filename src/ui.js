@@ -1,169 +1,88 @@
 import createMachine from "./stateMachine.js";
 import emitter from "./emitter.js";
 
-const uiContentEl = document.querySelector(".ui-content");
-const rulerEl = document.querySelector(".ui-btn.ruler");
-const mainBtn = document.querySelector(".ui-btn.ui-btn--main");
-const removeBtn = document.querySelector(".ui-btn.remove");
-
-const machine = createMachine({
-  initialState: "off",
-  off: {
-    actions: {
-      onEnter() {
-        console.log("off: onEnter off");
-        rulerEl.classList.remove("hidden");
-      },
-      onExit() {
-        console.log("off: onExit");
-      },
-      toggleUI() {
-        rulerEl.classList.toggle("active");
-        uiContentEl.classList.toggle("active");
-      },
-      enableRuler(machine) {
-        mainBtn.classList.add("active");
-        rulerEl.classList.add("hidden");
-        mainBtn.setAttribute("data-action", "cancelRuler");
-        document.body.classList.add("creating");
-        UI.emit("rulerEnabled");
-        // machine.transition(machine.value, "switch");
-      },
-      cancelRuler() {
-        mainBtn.classList.remove("active");
-        rulerEl.classList.remove("hidden");
-        mainBtn.setAttribute("data-action", "enableRuler");
-        document.body.classList.remove("creating");
-        UI.emit("rulerCanceled");
-      },
-    },
-    transitions: {
-      startCreating: {
-        target: "creating",
-        action() {
-          console.log("transition action for 'startCreating' in 'off' state");
-        },
-      },
-      startEditing: {
-        target: "editing",
-        action() {
-
-        }
-      }
-    },
-  },
-  creating: {
-    actions: {
-      onEnter() {
-        console.log("on: onEnter creating");
-        mainBtn.classList.remove("add");
-        mainBtn.classList.add("accept");
-        removeBtn.classList.add("active");
-        UI.emit("creating");
-      },
-      onExit() {
-        console.log("on: onExit");
-        mainBtn.classList.add("add");
-        mainBtn.classList.remove("accept");
-        removeBtn.classList.remove("active");
-      },
-      removeLine(machine) {
-        mainBtn.classList.remove("active");
-        rulerEl.classList.remove("hidden");
-        mainBtn.setAttribute("data-action", "enableRuler");
-        document.body.classList.remove("creating");
-        machine.transition(machine.value, "stopCreating");
-        UI.emit("removeLine");
-      },
-      cancelRuler(machine) {
-        mainBtn.classList.remove("active");
-        rulerEl.classList.remove("hidden");
-        mainBtn.setAttribute("data-action", "enableRuler");
-        document.body.classList.remove("creating");
-        machine.transition(machine.value, "stopCreating");
-        UI.emit("rulerCanceled");
-      },
-    },
-    transitions: {
-      stopCreating: {
-        target: "off",
-        action() {
-          console.log("transition action for 'stopCreating' in 'on' state");
-        },
-      },
-    },
-  },
-  editing: {
-    actions: {
-      onEnter() {
-        removeBtn.classList.add("active");
-        mainBtn.classList.add("disabled");
-      },
-      onExit() {
-
-      },
-      enableRuler(machine) {
-        machine.transition(machine.value, "startOff");
-      },
-      removeLine(machine) {
-        UI.emit("removeLine");
-        mainBtn.classList.remove("active");
-        rulerEl.classList.remove("hidden");
-        mainBtn.setAttribute("data-action", "enableRuler");
-        document.body.classList.remove("creating");
-        // machine.transition(machine.value, "startOff");
-      },
-    },
-    transitions: {
-      startOff: {
-        target: "off",
-        action(machine) {
-          console.log("transition action for 'startOff' in 'on' state");
-          mainBtn.classList.remove("disabled");
-          removeBtn.classList.remove("active");
-        }
-      },
-      startCreating: {
-        target: "creating",
-        action() {
-          console.log("transition action for 'startCreating' in 'on' state");
-        }
-      }
+class UI {
+  constructor() {
+    this.listeners = {};
+    this.history = document.querySelector(".ui-buttons__history");
+    this.content = document.querySelector(".ui-content");
+    this.buttons = {
+      main: document.querySelector(".ui-btn--main"),
+      undo: document.querySelector(".ui-btn[data-type='undo']"),
+      redo: document.querySelector(".ui-btn[data-type='redo']"),
+      remove: document.querySelector(".ui-btn[data-type='remove']"),
+      ruler: document.querySelector(".ui-btn[data-type='ruler']"),
+    };
+    this.className = {
+      active: "active",
+      hidden: "hidden",
+      disabled: "disabled",
     }
+    this.setHistory("hidden", true);
+    this.setRemove("disabled", true);
+    this.bind();
   }
-});
+  bind() {
+    document.addEventListener("click", (event) => {
+      const clicked = event.target.closest("[data-action]");
+      const action = clicked && clicked.getAttribute("data-action");
+      const isDisabled = clicked && clicked.classList.contains("disabled");
 
-document.body.addEventListener("click", (event) => {
-  const clicked = event.target.closest("[data-action]");
-  const action = clicked && clicked.getAttribute("data-action");
-  const isDisabled = clicked && clicked.classList.contains("disabled");
-  console.log(clicked?.classList, isDisabled);
-  if (isDisabled) {
-    return;
+      if (isDisabled || !clicked) {
+        return;
+      }
+
+      this.emit(action);      
+    });
   }
-  
-  const state = machine.value;
-  console.log(state, action);
-  machine.action(state, action);
-});
-
-setInterval(() => {
-  console.log(machine.value);
-}, 1000)
-
-document.body.addEventListener("keyup", (event) => {  
-  const state = machine.value;
-  if (event.key === "Escape") {
-    machine.action(state, "cancelRuler");
+  setBody(type, value) {
+    this.set(document.body, type, value);
   }
-});
+  setContent(type, value) {
+    this.set(this.content, type, value);
+  }
+  setHistory(type, value) {
+    this.set(this.history, type, value);
+  }
+  setMain(type, value) {
+    this.set(this.buttons.main, type, value);
+  }
+  setUndo(type, value) {
+    this.set(this.buttons.undo, type, value);
+  }
+  setRedo(type, value) {
+    this.set(this.buttons.redo, type, value);
+  }
+  setRemove(type, value) {
+    this.set(this.buttons.remove, type, value);
+  }
+  setRuler(type, value) {
+    this.set(this.buttons.ruler, type, value);
+  }
+  set(element, type, value) {
+    const action = value === true ? "add" : (value === false ? "remove" : "toggle");
+    element.classList[action](type);
+  }
+  on(listener, fn) {
+    if (!this.listeners[listener]) {
+      this.listeners[listener] = [];
+    }
+    this.listeners[listener].push(fn);
+  }
+  off(listener) {    
+    if (!this.listeners[listener]) {
+      return;
+    }
+    delete this.listeners[listener];
+  }
+  emit(listener) {
+    if (!this.listeners[listener]) {
+      return;
+    }
+    this.listeners[listener].forEach((fn) => {
+      fn.call(null, ...[...arguments].slice(1));
+    });
+  }
+}
 
-const UI = {
-  ...emitter,
-  set(action) {
-    const state = machine.value;
-    machine.transition(state, action);
-  },
-};
-
-export default UI;
+export default new UI();

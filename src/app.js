@@ -16,6 +16,7 @@ import { createBox } from "./utils.js";
 
 import { cast, castExceptDot } from "./raycaster.js";
 import UI from "./ui.js";
+import "./controls.js";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
@@ -132,24 +133,24 @@ function init() {
   }
 
   // RULER
-  UI.on("rulerEnabled", () => {
-    orbit.enabled = false;
-    rulerEnabled = true;
-  });
+  // UI.on("rulerEnabled", () => {
+  //   orbit.enabled = false;
+  //   rulerEnabled = true;
+  // });
 
-  UI.on("rulerCanceled", () => {
-    orbit.enabled = true;
-    rulerEnabled = false;
+  // UI.on("rulerCanceled", () => {
+  //   orbit.enabled = true;
+  //   rulerEnabled = false;
     
-    finishLine();
-  });
+  //   finishLine();
+  // });
 
-  UI.on("removeLine", () => {
-    orbit.enabled = true;
-    rulerEnabled = false;
-    console.log(222);
-    removeLine();
-  });
+  // UI.on("removeLine", () => {
+  //   orbit.enabled = true;
+  //   rulerEnabled = false;
+  //   console.log(222);
+  //   removeLine();
+  // });
 
   let drawingLine = false,
     mouse = new THREE.Vector2();

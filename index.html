@@ -13,19 +13,19 @@
       <div class="ui-content__inner">
         <div class="ui-tooltip"></div>
         <div class="ui-buttons">
-          <div class="ui-buttons__history">
-            <div class="ui-btn ui-btn--undo">
+          <div class="ui-buttons__history hidden">
+            <div class="ui-btn ui-btn--history" data-type="undo" data-action="undo">
               <svg width="30" height="30">
                 <use xlink:href="./public/img/sprites.svg#history" />
               </svg>
             </div>
-            <div class="ui-btn ui-btn--redo">
+            <div class="ui-btn ui-btn--history" data-type="redo" data-action="redo">
               <svg width="30" height="30">
                 <use xlink:href="./public/img/sprites.svg#history" />
               </svg>
             </div>
           </div>
-          <div class="ui-btn ui-btn--main add" data-action="enableRuler">
+          <div class="ui-btn ui-btn--main" data-type="add" data-action="toggleRuler">
             <svg width="30" height="30">
               <use xlink:href="./public/img/sprites.svg#plus" />
             </svg>
@@ -33,7 +33,7 @@
               <use xlink:href="./public/img/sprites.svg#accept" />
             </svg>
           </div>
-          <div class="ui-btn remove" data-action="removeLine">
+          <div class="ui-btn" data-type="remove" data-action="removeLine">
             <svg width="25" height="25">
               <use xlink:href="./public/img/sprites.svg#busket" />
             </svg>
@@ -42,7 +42,7 @@
       </div>
     </ui>
     <div class="ui-controls">
-      <div class="ui-btn ruler" data-action="toggleUI">
+      <div class="ui-btn" data-type="ruler" data-action="toggleUI">
         <svg width="25" height="25">
           <use xlink:href="./public/img/sprites.svg#ruler" />
         </svg>

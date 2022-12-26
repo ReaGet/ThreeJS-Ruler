@@ -50,6 +50,8 @@ body.creating {
 
 .ui-buttons {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .ui-buttons__history {
@@ -60,111 +62,106 @@ body.creating {
   transform: translateY(-50%);
 }
 
-.ui-buttons__history .ui-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.ui-buttons__history .ui-btn + .ui-btn {
-  margin-left: 10px;
-}
-
-.ui-buttons__history .ui-btn--redo {
-  transform: scaleX(-1);
+.ui-buttons__history.hidden {
+  display: none;
 }
 
 .ui-btn {
   width: 50px;
   height: 50px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  stroke: #333;
   cursor: pointer;
-  transition: all .2s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
 
-.ui-btn svg {
-  fill: #fff;
+.ui-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
-.ui-btn.ruler.active svg {
-  fill: var(--primary);
-}
-
-.ui-btn.ruler.hidden {
+.ui-btn.hidden {
   display: none;
 }
 
-.ui-btn.ruler:hover {
+.ui-btn.disabled {
+  cursor: pointer;
+  pointer-events: none;
   opacity: 0.7;
 }
 
-.ui-btn.add,
-.ui-btn.accept {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.ui-btn + .ui-btn {
+  margin-left: 10px;
+}
+
+.ui-btn.ui-btn--history.active {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.ui-btn[data-type=undo] {}
+
+.ui-btn[data-type=redo] {
+  transform: scaleX(-1);
+}
+
+.ui-btn.ui-btn--main {
   width: 60px;
   height: 60px;
   background-color: #fff;
+  transition: all .2s cubic-bezier(0.075, 0.82, 0.165, 1);
 }
 
-.ui-btn.add svg {
-  stroke: #333;
+.ui-btn.ui-btn--main:hover {
+  background-color: var(--primary);
+}
+
+.ui-btn[data-type=add] svg {
   stroke-width: 30;
 }
 
-.ui-btn.accept svg {
-  stroke: #333;
-  stroke-width: 3;
-}
-
-.ui-btn.add svg:last-child {
-  display: none;
-}
-
-.ui-btn.accept svg:first-child {
-  display: none;
-}
-
-.ui-btn.add.active {
+.ui-btn[data-type=add].active {
   transform: rotateZ(45deg);
 }
 
-.ui-btn--main.disabled {
-  opacity: 0.7;
-  /* pointer-events: none; */
-}
-
-.ui-btn.add:hover,
-.ui-btn.accept:hover {
-  background-color: var(--primary);
-  opacity: 1;
-}
-
-.ui-btn.add:hover svg,
-.ui-btn.accept:hover svg {
+.ui-btn[data-type=add]:hover svg {
   stroke: #fff;
 }
 
-.ui-btn.remove {
-  width: 50px;
-  height: 50px;
-  background-color: rgb(255 255 255 / 20%);
+.ui-btn[data-type=accept] svg {
+  stroke-width: 3;
+}
+
+.ui-btn[data-type=accept]:hover svg {
+  stroke: #fff;
+}
+
+.ui-btn[data-type=add] svg:last-child {
+  display: none;
+}
+
+.ui-btn[data-type=accept] svg:first-child {
+  display: none;
+}
+
+.ui-btn[data-type=remove] {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
   right: -60px;
 }
 
-.ui-btn.remove.active {
-  background-color: rgb(0 0 0 / 60%);
+.ui-btn[data-type=remove] svg {
+  fill: #333;
 }
 
-.ui-btn.ui-btn.remove.active svg {
-  fill: rgb(255 255 255 / 64%);
+.ui-btn[data-type=ruler] {
+  background-color: transparent;
 }
 
-.ui-btn.ui-btn.remove svg {
-  fill: rgb(122 122 122 / 64%);
+.ui-btn[data-type=ruler] svg {
+  fill: #fff;
+}
+
+.ui-btn[data-type=ruler].active svg {
+  fill: var(--primary)
 }
