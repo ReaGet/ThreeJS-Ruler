@@ -16,6 +16,7 @@ import { createBox } from "./utils.js";
 
 import { cast, castExceptDot } from "./raycaster.js";
 import UI from "./ui.js";
+import { LuminanceFormat } from "three";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
@@ -158,7 +159,10 @@ function init() {
     segment: {
       line: null,
       label: null,
-      points: [],
+      points: {
+        a: null,
+        b: null,
+      },
     },
     lines: [],
   };
@@ -177,10 +181,16 @@ function init() {
   function removeLine() {
     removeFromScene(creating.segment.line);
     removeFromScene(creating.segment.label);
-    removeFromScene(creating.segment.points);
+    removeFromScene(creating.segment.points.a);
+    removeFromScene(creating.segment.points.b);
     for (let line of creating.lines) {
       for (let key in line) {
-        removeFromScene(line[key]);
+        if (key === "points") {
+          removeFromScene(line[key].a);
+          removeFromScene(line[key].b);
+        } else {
+          removeFromScene(line[key]);
+        }
       }
     }
     drawingLine = false;
@@ -188,24 +198,24 @@ function init() {
   }
 
   function removeFromScene(element) {
-    if (Array.isArray(element)) {
-      element.forEach((item) => removeFromScene(item));
-    } else {
-      const object = scene.getObjectByProperty("uuid", element.uuid);
-      scene.remove(object);
-      scene.remove(element);
+    if (!element) {
+      return;
     }
+    const object = scene.getObjectByProperty("uuid", element.uuid);
+    scene.remove(object);
+    scene.remove(element);
   }
 
   function finishLine() {
-    if (creating.segment.points.length === 1) {
+    if (creating.segment.points.b === null) {
       scene.remove(creating.segment.line);
       scene.remove(creating.segment.label);
       if (creating.lines.length === 0) {
-        removeFromScene(creating.segment.points);
+        removeFromScene(creating.segment.points.a);
+        removeFromScene(creating.segment.points.b);
       }
     }
-    lines.push(...creating.lines);
+    lines.push(creating.lines);
     resetSegment();
     drawingLine = false;
   }
@@ -213,7 +223,10 @@ function init() {
   function resetSegment() {
     creating.segment.line = null;
     creating.segment.label = null;
-    creating.segment.points = [];
+    creating.segment.points = {
+      a: null,
+      b: null,
+    };
     creating.lines = [];
   }
   
@@ -221,7 +234,7 @@ function init() {
     const dotGeometry = new THREE.SphereGeometry(5, 32, 16);
     const dotMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
     const dot = new THREE.Mesh(dotGeometry, dotMaterial);
-    dot.userData.line = true;
+    dot.userData.dot = true;
     dot.position.copy(point);
     return dot;
   }
@@ -260,44 +273,73 @@ function init() {
     const segment = {};
     for (let key in creating.segment) {
       let object = creating.segment[key];
-      if (Array.isArray(object)) {
-        let array = [];
-        for (let item of object) {
-          const el = item.clone();
-          el.uuid = item.uuid;
-          array.push(el);
-        }
-        segment[key] = array;
+      if (key === "points") {
+        // console.log(object);
+        segment[key] = {};
+        segment[key].a = object.a.clone();
+        segment[key].a.uuid = object.a.uuid;
+        segment[key].b = object.b.clone();
+        segment[key].b.uuid = object.b.uuid;
       } else {
         segment[key] = creating.segment[key].clone();
         segment[key].uuid = creating.segment[key].uuid;
       }
     }
     creating.segment.line = null;
-    creating.segment.points = [];
+    creating.segment.points = {
+      a: null,
+      b: null,
+    };
     creating.segment.label = null;
     return segment;
   }
 
-  renderer.domElement.addEventListener('mouseup', onClick, false);
-  function onClick(event) {
-    if (clickedDot) {
+  function updateLine(object) {
+    let offset = object.points.a.uuid === clickedPoint.uuid ? 0 : 3;
+    let line = scene.getObjectByProperty("uuid", object.line.uuid);
+    let label = scene.getObjectByProperty("uuid", object.label.uuid);
+    line.geometry.attributes.position.needsUpdate = true;
+    const positions = line.geometry.attributes.position.array;
+    positions[offset    ] = clickedPoint.position.x;
+    positions[offset + 1] = clickedPoint.position.y;
+    positions[offset + 2] = clickedPoint.position.z;
+
+    const val = calcDistance(positions);
+    label.element.innerText = val.d.toFixed(2) + 'm';
+    label.position.lerpVectors(val.v0, val.v1, 0.5);
+  }
+
+  function setLineStructureSelected(selected) {
+    const color = selected ? 0xff0000 : 0xffffff;
+    console.log(selectedLineStructure);
+    selectedLineStructure.forEach((segment) => {
+      segment.line.material.color.set(color);
+      segment.points.a.material.color.set(color);
+      segment.points.b.material.color.set(color);
+    });
+  }
+
+  renderer.domElement.addEventListener('mouseup', onMouseUp, false);
+  function onMouseUp(event) {
+    if (clickedPoint) {
       orbit.enabled = true;
-      clickedDot = null;
+      clickedPoint = null;
     }
     if (dragging || event.which !== 1 || !rulerEnabled) {
       return;
     }
     intersects = cast(mouse, currentCamera, scene, boxes);
     const dot = createDot(intersects.point);
-    creating.segment.points.push(dot);
-    scene.add(dot);
-    
-    if (creating.segment.points.length === 2) {
+
+    if (creating.segment.points.a === null) {
+      creating.segment.points.a = dot;
+    } else if (creating.segment.points.b === null) {
+      creating.segment.points.b = dot;
       const line = copyResetSegment();
       creating.lines.push(line);
-      creating.segment.points.push(dot);
+      creating.segment.points.a = dot;
     }
+    scene.add(dot);
 
     creating.segment.line = createLine(intersects.point);
     scene.add(creating.segment.line);
@@ -315,61 +357,78 @@ function init() {
     mouseClicked = false;
   }
 
-  let clickedDot = null;
+  let linesToUpdate = [];
+  let selectedLineStructure = null;
+  let clickedPoint = null;
 
-  document.addEventListener('mousedown', onDocumentMouseDown, false);
-  function onDocumentMouseDown() {
+  document.addEventListener('mousedown', onMouseDown, false);
+  function onMouseDown() {
     mouseClicked = true;
     dragging = false;
     if (drawingLine) {
       return;
     }
-    clickedDot = cast(mouse, currentCamera, scene, boxes, true);
-    if (clickedDot) {
+    clickedPoint = cast(mouse, currentCamera, scene, boxes, true);
+    if (clickedPoint) {
       orbit.enabled = false;
+      for (let i = 0; i < lines.length; i++) {
+        linesToUpdate = lines[i].filter((line) => {
+          return (
+            line.points.a.uuid === clickedPoint.uuid ||
+            line.points.b.uuid === clickedPoint.uuid
+          );
+        });
+        if (linesToUpdate.length > 0) {
+          selectedLineStructure = lines[i];
+          setLineStructureSelected(true);
+          break;
+        }
+      }
+    } else {
+      if (selectedLineStructure) {
+        setLineStructureSelected(false);
+      }
     }
-    console.log(clickedDot)
     
   }
 
-  document.addEventListener('mousemove', onDocumentMouseMove, false);
-  function onDocumentMouseMove(event) {
+  document.addEventListener('mousemove', onMouseMove, false);
+  function onMouseMove(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     if (mouse.x !== mousePrev[0] && mouse.y !== mousePrev[1]) {
       mousePrev = [mouse.x, mouse.y];
       dragging = true;
     }
-    // console.log(clickedDot)
-    if (clickedDot) {
-      // console.log(clickedDot);
-      // clickedDot.position.setXYZ(mouse.x, mouse.y, 0);
-      const target = castExceptDot(mouse, currentCamera, scene, boxes);
-      console.log(target);
-      target && clickedDot.position.set(target.point.x, target.point.y, target.point.z);
-      target && (clickedDot.position.needsUpdate = true);
+    if (clickedPoint) {
+      const target = castExceptDot(mouse, currentCamera, scene, boxes, true);
+      target && clickedPoint.position.set(target.point.x, target.point.y, target.point.z);
+      target && (clickedPoint.position.needsUpdate = true);
+
+      linesToUpdate.forEach(updateLine);
     }
     if (drawingLine) {
       intersects = cast(mouse, currentCamera, scene, boxes);
       if (intersects) {
         const positions = creating.segment.line.geometry.attributes.position.array;
-        const v0 = new THREE.Vector3(
-            positions[0],
-            positions[1],
-            positions[2]
-        );
-        const v1 = new THREE.Vector3(
-            intersects.point.x,
-            intersects.point.y,
-            intersects.point.z
-        );
+        // const v0 = new THREE.Vector3(
+        //     positions[0],
+        //     positions[1],
+        //     positions[2]
+        // );
+        // const v1 = new THREE.Vector3(
+        //     intersects.point.x,
+        //     intersects.point.y,
+        //     intersects.point.z
+        // );
         positions[3] = intersects.point.x;
         positions[4] = intersects.point.y;
         positions[5] = intersects.point.z;
         creating.segment.line.geometry.attributes.position.needsUpdate = true;
-        const distance = v0.distanceTo(v1);
-        creating.segment.label.element.innerText = distance.toFixed(2) + 'm';
-        creating.segment.label.position.lerpVectors(v0, v1, 0.5);
+        const val = calcDistance(positions);
+        // const distance = v0.distanceTo(v1);
+        creating.segment.label.element.innerText = val.d.toFixed(2) + 'm';
+        creating.segment.label.position.lerpVectors(val.v0, val.v1, 0.5);
       }
     }
   }
@@ -379,6 +438,24 @@ function init() {
 
   // RULER END
 
+}
+
+function calcDistance(positions) {
+  const v0 = new THREE.Vector3(
+      positions[0],
+      positions[1],
+      positions[2]
+  );
+  const v1 = new THREE.Vector3(
+    positions[3],
+    positions[4],
+    positions[5]
+  );
+  return {
+    d: v0.distanceTo(v1),
+    v0,
+    v1
+  };
 }
 
 function onWindowResize() {
