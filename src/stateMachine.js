@@ -11,8 +11,8 @@ export default function createMachine(stateMachineDefinition) {
       const destinationStateDefinition = stateMachineDefinition[destinationState];
 
       destinationTransition.action();
-      currentStateDefinition.actions.onExit();
-      destinationStateDefinition.actions.onEnter();
+      currentStateDefinition.actions?.onExit();
+      destinationStateDefinition.actions?.onEnter();
 
       machine.value = destinationState;
 

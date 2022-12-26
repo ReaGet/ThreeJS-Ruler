@@ -32,7 +32,7 @@ class UI {
         return;
       }
 
-      this.emit(action);      
+      this.emit("click", action);      
     });
   }
   setBody(type, value) {
@@ -45,7 +45,9 @@ class UI {
     this.set(this.history, type, value);
   }
   setMain(type, value) {
+    const action = value === false ? "enableRuler" : "cancelRuler";
     this.set(this.buttons.main, type, value);
+    this.buttons.main.setAttribute("data-action", action);
   }
   setUndo(type, value) {
     this.set(this.buttons.undo, type, value);

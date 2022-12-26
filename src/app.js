@@ -15,8 +15,8 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createBox } from "./utils.js";
 
 import { cast, castExceptDot } from "./raycaster.js";
-import UI from "./ui.js";
-import "./controls.js";
+import ui from "./ui.js";
+import controls from "./controls.js";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
@@ -152,6 +152,24 @@ function init() {
   //   removeLine();
   // });
 
+  ui.on("rulerEnabled", () => {
+    orbit.enabled = false;
+    rulerEnabled = true;
+  });
+
+  ui.on("rulerCanceled", () => {
+    orbit.enabled = true;
+    rulerEnabled = false;
+    finishLine();
+  });
+
+  ui.on("removeLine", () => {
+    orbit.enabled = true;
+    rulerEnabled = false;
+    console.log(222);
+    removeLine();
+  });
+
   let drawingLine = false,
     mouse = new THREE.Vector2();
 
@@ -184,7 +202,7 @@ function init() {
     removeFromScene(creating.segment.label);
     removeFromScene(creating.segment.points.a);
     removeFromScene(creating.segment.points.b);
-    for (let line of selectedLineStructure) {
+    for (let line of creating.lines) {
       for (let key in line) {
         if (key === "points") {
           removeFromScene(line[key].a);
@@ -348,11 +366,13 @@ function init() {
     creating.segment.label = createLabel(intersects.point);
     scene.add(creating.segment.label);
     drawingLine = true;
-
+    console.log(creating.lines);
     if (creating.lines.length > 0) {
-      UI.set("startCreating");
+      // UI.set("startCreating");
+      controls.transition(controls.value, "creating");
     } else {
-      UI.set("stopCreating");
+      // UI.set("stopCreating");
+      controls.transition(controls.value, "default");
     }
   }
 
@@ -377,7 +397,7 @@ function init() {
           );
         });
         if (linesToUpdate.length > 0) {
-          UI.set("startEditing");
+          controls.transition(controls.value, "startEditing");
           selectedLineStructure = lines[i];
           setLineStructureSelected(true);
           break;
@@ -385,7 +405,8 @@ function init() {
       }
     } else {
       if (selectedLineStructure) {
-        UI.set("startOff");
+        console.log(controls.value);
+        controls.transition(controls.value, "default");
         setLineStructureSelected(false);
       }
     }
