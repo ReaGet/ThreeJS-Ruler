@@ -106,12 +106,12 @@ const machine = createMachine({
         machine.transition(machine.value, "startOff");
       },
       removeLine(machine) {
+        UI.emit("removeLine");
         mainBtn.classList.remove("active");
         rulerEl.classList.remove("hidden");
         mainBtn.setAttribute("data-action", "enableRuler");
         document.body.classList.remove("creating");
-        machine.transition(machine.value, "startOff");
-        UI.emit("removeLine");
+        // machine.transition(machine.value, "startOff");
       },
     },
     transitions: {
@@ -136,11 +136,20 @@ const machine = createMachine({
 document.body.addEventListener("click", (event) => {
   const clicked = event.target.closest("[data-action]");
   const action = clicked && clicked.getAttribute("data-action");
+  const isDisabled = clicked && clicked.classList.contains("disabled");
+  console.log(clicked?.classList, isDisabled);
+  if (isDisabled) {
+    return;
+  }
   
   const state = machine.value;
   console.log(state, action);
   machine.action(state, action);
 });
+
+setInterval(() => {
+  console.log(machine.value);
+}, 1000)
 
 document.body.addEventListener("keyup", (event) => {  
   const state = machine.value;

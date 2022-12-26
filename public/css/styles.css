@@ -105,7 +105,7 @@ body.creating {
 
 .ui-btn--main.disabled {
   opacity: 0.7;
-  pointer-events: none;
+  /* pointer-events: none; */
 }
 
 .ui-btn.add:hover,
