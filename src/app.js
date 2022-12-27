@@ -132,15 +132,6 @@ function init() {
   ruler = Ruler(scene, currentCamera);
   let mouse, mousePrev = [], dragging;
 
-  ui.on("rulerEnabled", () => {
-    ruler.setState("enabled");
-  });
-
-  ui.on("rulerCanceled", () => {
-    ruler.cancel();
-    orbit.enabled = true;
-  });
-
   ui.on("mousedown", (event) => {
     event.stopPropagation();
     ruler.select(
@@ -151,11 +142,21 @@ function init() {
     dragging = false;
   });
   
-  ui.on("mouseup", (event) => {
+  ui.on("mouseup", (event, clicked) => {
+    if (clicked === "ui") {
+      return;
+    }
+
     ruler.addPoint(
       intersects().at(0),
       dragging
     );
+
+    ui.emit("creating", ruler.hasLines());
+    ui.emit("editing", ruler.hasSelected());
+    if (!ruler.hasSelected()) {
+      ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
+    }
 
     orbit.enabled = true;
   });
@@ -182,8 +183,39 @@ function init() {
     return raycaster.intersectObjects(scene.children);
   }
 
+  ui.on("rulerEnabled", () => {
+    ruler.setState("enabled");
+  });
+
+  ui.on("rulerCanceled", () => {
+    ruler.cancel();
+    orbit.enabled = true;
+  });
+
+  ui.on("remove", () => {
+    if (ruler.hasSelected()) {
+      ruler.removeSelected();
+    } else {
+      ruler.removeLine();
+    }
+    if (!ruler.hasLines()) {
+      ui.emit("cancelRuler");
+    }
+  });
+
+  ui.on("undo", () => {
+    ruler.undo();
+    ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
+  });
+
+  ui.on("redo", () => {
+    ruler.redo();
+    ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
+  });
+
   document.addEventListener("keyup", (event) => {
     if (event.key === "Escape") {
+      ui.emit("cancelRuler");
       ruler.cancel();
       orbit.enabled = true;
     }
@@ -193,10 +225,12 @@ function init() {
     if (event.key === "z") {
       console.log("undo");
       ruler.undo();
+      ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
     }
     if (event.key === "y") {
       console.log("redo");
       ruler.redo();
+      ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
     }
   });
 }

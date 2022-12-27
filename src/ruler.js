@@ -124,6 +124,20 @@ export default function(scene_, camera_) {
     }
   }
 
+  function removePoints() {
+    for (let i = 0; i < current.points.length; i++) {
+      scene.remove(current.points[i]);
+      current.points.splice(i, 1);
+      i--;
+    }
+  }
+
+  function removeStructure() {
+    removeLines();
+    removeLabels();
+    removePoints();
+  }
+
   function finishStructure() {
     if (current.points.length < 2) {
       current.points.forEach((point) => scene.remove(point));
@@ -274,6 +288,9 @@ export default function(scene_, camera_) {
       handleLines();
       this.cancel();
     },
+    removeLine() {
+      removeStructure();
+    },
     isRuler(intersaction) {
       return intersaction && intersaction.object.userData.dot === true;
     },
@@ -287,7 +304,6 @@ export default function(scene_, camera_) {
       removePoint(point);
       updateIndicator(point);
       handleLines();
-      
       if (current.points.length === 0) {
         finishStructure();
         this.cancel();
@@ -303,6 +319,18 @@ export default function(scene_, camera_) {
       createPoint(point.position);
       handleLines();
       this.update();
+    },
+    hasLines() {
+      return current.lines.length > 0 && !!current.indicator;
+    },
+    hasSelected() {
+      return !!current.selected;
+    },
+    hasUndo() {
+      return state === "enabled" && current.points.length > 0;
+    },
+    hasRedo() {
+      return state === "enabled" && current.history.length > 0;
     }
   };
 

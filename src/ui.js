@@ -33,8 +33,9 @@ class UI {
       const clicked = event.target.closest("[data-action]");
       const action = clicked && clicked.getAttribute("data-action");
       const isDisabled = clicked && clicked.classList.contains("disabled");
+      const isUI = clicked ? "ui" : "";
 
-      this.emit("mouseup", event);
+      this.emit("mouseup", event, isUI);
       
       if (isDisabled || !clicked) {
         return;
@@ -45,6 +46,25 @@ class UI {
       event.stopPropagation();
       this.emit("mousemove", event);
     });
+    this.on("creating", (hasLines) => {
+      if (!hasLines) { return; }
+      this.buttons.main.setAttribute("data-type", "accept");
+      this.buttons.remove.classList.remove("disabled");
+    });
+    this.on("editing", (hasSelected) => {
+      if (!hasSelected) { return; }
+      this.buttons.remove.classList.remove("disabled");
+    });
+    this.on("cancelRuler", () => {
+      this.cancelRuler();
+    });
+    this.on("history", (undo, redo) => {
+      const enable = undo || redo;
+      this.history.classList[enable ? "remove" : "add"]("hidden");
+      this.buttons.undo.classList[undo ? "remove" : "add"]("disabled");
+      this.buttons.redo.classList[redo ? "remove" : "add"]("disabled");
+      !undo && !redo && this.cancelRuler();
+    });
   }
   toggleUI() {
     this.content.classList.toggle("active");
@@ -54,13 +74,29 @@ class UI {
     this.buttons.main.classList.add("active");
     this.buttons.main.setAttribute("data-action", "cancelRuler");
     this.body.classList.add("creating");
+    this.buttons.ruler.classList.add("hidden");
     this.emit("rulerEnabled");
   }
   cancelRuler() {
     this.buttons.main.classList.remove("active");
     this.buttons.main.setAttribute("data-action", "enableRuler");
+    this.buttons.main.setAttribute("data-type", "add");
+    this.buttons.undo.classList.add("disabled");
+    this.buttons.redo.classList.add("disabled");
+    this.buttons.remove.classList.add("disabled");
+    this.buttons.ruler.classList.remove("hidden");
     this.body.classList.remove("creating");
+    this.history.classList.add("hidden");    
     this.emit("rulerCanceled");
+  }
+  remove() {    
+    this.emit("remove");
+  }
+  undo() {
+    this.emit("undo");
+  }
+  redo() {
+    this.emit("redo");
   }
   set(element, type, value) {
     const action = value === true ? "add" : (value === false ? "remove" : "toggle");
