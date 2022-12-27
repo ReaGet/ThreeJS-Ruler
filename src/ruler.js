@@ -207,8 +207,12 @@ export default function(scene_, camera_) {
     setState(state_ = "") {
       state = state_;
     },
-    addPoint(intersaction) {
+    addPoint(intersaction, dragging = false) {
       const point = intersaction?.point;
+      this.mouseUp();
+      if (this.isRuler(intersaction) || dragging) {
+        return;
+      }
       if (state === "selected") {
         this.cancel();
         return;
@@ -244,15 +248,15 @@ export default function(scene_, camera_) {
       current.selectedCanMove = false;
     },
     cancel() {
-      console.log(222);
       finishStructure();
       removeIndicator();
       deselect();
       resetCurrent();
       this.setState();
     },
-    select(intersaction) {
-      if (state === "enabled") { return; }
+    select(intersaction, fn = () => {}) {
+      if (state === "enabled" || !this.isRuler(intersaction)) { return; }
+      fn();
       this.cancel();
       this.setState("selected");
       current = lines.filter((line) => {
@@ -276,7 +280,8 @@ export default function(scene_, camera_) {
     hasSelected() {
       return !!current.selected;
     },
-    undo() {      
+    undo() {
+      if (state !== "enabled") { return; }
       const point = current.points.slice(-1).at(0);
       current.history.push(point);
       removePoint(point);
@@ -290,6 +295,7 @@ export default function(scene_, camera_) {
       }
     },
     redo() {
+      if (state !== "enabled") { return; }
       const point = current.history.splice(-1).at(0);
       if (!point) {
         return;

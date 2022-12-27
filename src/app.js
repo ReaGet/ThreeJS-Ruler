@@ -143,28 +143,20 @@ function init() {
 
   ui.on("mousedown", (event) => {
     event.stopPropagation();
-    const intersaction = intersects().at(0);
-    if (ruler.isRuler(intersaction)) {
-      ruler.select(intersaction);
-    }
-    if (ruler.hasSelected()) {
-      orbit.enabled = false;
-    }
+    ruler.select(
+      intersects().at(0),
+      () => orbit.enabled = false
+    );
+
     dragging = false;
   });
   
   ui.on("mouseup", (event) => {
-    event.stopPropagation();
-    const intersaction = intersects().at(0);
-    ruler.mouseUp();
-    if (dragging || !intersaction || !ruler.getState()) {
-      return;
-    }
-    console.log(ruler.getState());
-    if (!ruler.isRuler(intersaction)) {
-      ruler.addPoint(intersaction);
-    }
-    
+    ruler.addPoint(
+      intersects().at(0),
+      dragging
+    );
+
     orbit.enabled = true;
   });
   
