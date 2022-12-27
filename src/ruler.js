@@ -145,7 +145,7 @@ export default function(scene_, camera_) {
     current.history = [];
   }
 
-  function diselect() {
+  function deselect() {
     current.selected && current.selected.material.color.set(0xffffff);
   }
 
@@ -201,14 +201,17 @@ export default function(scene_, camera_) {
   }
 
   const ruler = {
+    setState(state_ = "") {
+      state = state_;
+    },
     addPoint(intersaction) {
       const point = intersaction?.point;
       if (state === "selected") {
         this.cancel();
         return;
       }
-      if (!point) { return; }
-      state = "enabled";
+      if (!point || state !== "enabled") { return; }
+      // state = "enabled";
 
       current.history = [];
       createPoint(point);
@@ -240,14 +243,14 @@ export default function(scene_, camera_) {
     cancel() {
       finishStructure();
       removeIndicator();
-      diselect();
+      deselect();
       resetCurrent();
-      state = "";
+      this.setState();
     },
     select(intersaction) {
       if (state === "enabled") { return; }
       this.cancel();
-      state = "selected";
+      this.setState("selected");
       current = lines.filter((line) => {
         return line.points.find((point) => {
           return point.uuid === intersaction.object.uuid;
