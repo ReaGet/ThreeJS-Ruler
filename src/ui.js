@@ -6,6 +6,7 @@ class UI {
     this.listeners = {};
     this.history = document.querySelector(".ui-buttons__history");
     this.content = document.querySelector(".ui-content");
+    this.body = document.body;
     this.buttons = {
       main: document.querySelector(".ui-btn--main"),
       undo: document.querySelector(".ui-btn[data-type='undo']"),
@@ -18,48 +19,48 @@ class UI {
       hidden: "hidden",
       disabled: "disabled",
     }
-    this.setHistory("hidden", true);
-    this.setRemove("disabled", true);
+    this.set(this.history, "hidden", true);
+    this.set(this.buttons.remove, "disabled", true);
     this.bind();
   }
   bind() {
-    document.addEventListener("click", (event) => {
+    document.addEventListener("mousedown", (event) => {
+      event.stopPropagation();
+      this.emit("mousedown", event);
+    });
+    document.addEventListener("mouseup", (event) => {
+      event.stopPropagation();
       const clicked = event.target.closest("[data-action]");
       const action = clicked && clicked.getAttribute("data-action");
       const isDisabled = clicked && clicked.classList.contains("disabled");
 
+      this.emit("mouseup", event);
+      
       if (isDisabled || !clicked) {
         return;
       }
-
-      this.emit("click", action);      
+      this[action] && this[action]();
+    });
+    document.addEventListener("mousemove", (event) => {
+      event.stopPropagation();
+      this.emit("mousemove", event);
     });
   }
-  setBody(type, value) {
-    this.set(document.body, type, value);
+  toggleUI() {
+    this.content.classList.toggle("active");
+    this.buttons.ruler.classList.toggle("active");
   }
-  setContent(type, value) {
-    this.set(this.content, type, value);
+  enableRuler() {
+    this.buttons.main.classList.add("active");
+    this.buttons.main.setAttribute("data-action", "cancelRuler");
+    this.body.classList.add("creating");
+    this.emit("rulerEnabled");
   }
-  setHistory(type, value) {
-    this.set(this.history, type, value);
-  }
-  setMain(type, value) {
-    const action = value === false ? "enableRuler" : "cancelRuler";
-    this.set(this.buttons.main, type, value);
-    this.buttons.main.setAttribute("data-action", action);
-  }
-  setUndo(type, value) {
-    this.set(this.buttons.undo, type, value);
-  }
-  setRedo(type, value) {
-    this.set(this.buttons.redo, type, value);
-  }
-  setRemove(type, value) {
-    this.set(this.buttons.remove, type, value);
-  }
-  setRuler(type, value) {
-    this.set(this.buttons.ruler, type, value);
+  cancelRuler() {
+    this.buttons.main.classList.remove("active");
+    this.buttons.main.setAttribute("data-action", "enableRuler");
+    this.body.classList.remove("creating");
+    this.emit("rulerCanceled");
   }
   set(element, type, value) {
     const action = value === true ? "add" : (value === false ? "remove" : "toggle");

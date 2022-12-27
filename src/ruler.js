@@ -201,6 +201,9 @@ export default function(scene_, camera_) {
   }
 
   const ruler = {
+    getState() {
+      return state;
+    },
     setState(state_ = "") {
       state = state_;
     },
@@ -241,6 +244,7 @@ export default function(scene_, camera_) {
       current.selectedCanMove = false;
     },
     cancel() {
+      console.log(222);
       finishStructure();
       removeIndicator();
       deselect();

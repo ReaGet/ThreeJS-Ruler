@@ -4,20 +4,13 @@ import {
   OrbitControls
 } from "three/addons/OrbitControls.js";
 
-import {
-  CSS2DRenderer,
-  CSS2DObject,
-} from "three/addons/CSS2DRenderer.js";
 
-import Stats from "three/addons/stats.module.js";
 const raycaster = new THREE.Raycaster();
 
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createBox } from "./utils.js";
 
-import { cast, castExceptDot } from "./raycaster.js";
 import ui from "./ui.js";
-import controls from "./controls.js";
 
 import Ruler from "./ruler.js";
 
@@ -30,6 +23,7 @@ init();
 // render();
 
 function init() {
+  {
   const aspect = window.innerWidth / window.innerHeight;
 
   cameraPersp = new THREE.PerspectiveCamera(50, aspect, 0.01, 30000);
@@ -50,7 +44,7 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  {
+  
   const texture = new THREE.TextureLoader().load("textures/crate.gif");
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
@@ -136,9 +130,19 @@ function init() {
   }
 
   ruler = Ruler(scene, currentCamera);
-  let mouse, mousePrev = [], dragging, clicked;
+  let mouse, mousePrev = [], dragging;
 
-  document.addEventListener("mousedown", (event) => {
+  ui.on("rulerEnabled", () => {
+    ruler.setState("enabled");
+  });
+
+  ui.on("rulerCanceled", () => {
+    ruler.cancel();
+    orbit.enabled = true;
+  });
+
+  ui.on("mousedown", (event) => {
+    event.stopPropagation();
     const intersaction = intersects().at(0);
     if (ruler.isRuler(intersaction)) {
       ruler.select(intersaction);
@@ -149,12 +153,14 @@ function init() {
     dragging = false;
   });
   
-  document.addEventListener("mouseup", (event) => {
+  ui.on("mouseup", (event) => {
+    event.stopPropagation();
     const intersaction = intersects().at(0);
     ruler.mouseUp();
-    if (dragging || !intersaction) {
+    if (dragging || !intersaction || !ruler.getState()) {
       return;
     }
+    console.log(ruler.getState());
     if (!ruler.isRuler(intersaction)) {
       ruler.addPoint(intersaction);
     }
@@ -162,7 +168,8 @@ function init() {
     orbit.enabled = true;
   });
   
-  document.addEventListener("mousemove", (event) => {
+  ui.on("mousemove", (event) => {
+    event.stopPropagation();
     mouse = new THREE.Vector2(
       (event.clientX / window.innerWidth) * 2 - 1,
       -(event.clientY / window.innerHeight) * 2 + 1
