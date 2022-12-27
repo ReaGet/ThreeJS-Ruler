@@ -13,7 +13,7 @@ export default function(scene_) {
   };
 
   function createPoint(point_) {
-    const pointGeometry = new THREE.SphereGeometry(5, 32, 16);
+    const pointGeometry = new THREE.SphereGeometry(7, 32, 16);
     const pointMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
     const point = new THREE.Mesh(pointGeometry, pointMaterial);
 
@@ -42,7 +42,7 @@ export default function(scene_) {
 
   function handleLines() {
     removeLines();
-    
+
     if (current.points.length < 2) { return; }
 
     for (let i = 0; i < current.points.length - 1; i++) {
@@ -63,11 +63,11 @@ export default function(scene_) {
     }
   }
 
-  function removePoint(uuid) {
+  function removePoint(point) {
     for (let i = 0; i < current.points.length; i++) {
-      const point = current.points[i];
-      if (point.uuid === uuid) {
-        scene.remove(point);
+      const p = current.points[i];
+      if (p.uuid === point.uuid) {
+        scene.remove(p);
         current.points.splice(i, 1);
         i--;
       }
@@ -140,17 +140,16 @@ export default function(scene_) {
     update(intersaction) {
       const point = intersaction[0]?.point;
       const target = intersaction.filter((item) => (
-        item.userData?.line !== true && item.userData?.dot !== true
-      )).at(0)?.point;
+        item.object.userData?.line !== true && item.object.userData?.dot !== true
+      )).at(0);
       if (state === "" || !point || !target) { return; }
       if (state === "selected") {
-        current.selectedCanMove && updatePoint(target);
+        current.selectedCanMove && updatePoint(target.point);
       } else {
         updateIndicator(point);
       }
     },
     mouseUp() {
-      console.log(222);
       current.selectedCanMove = false;
     },
     cancel() {
@@ -172,13 +171,10 @@ export default function(scene_) {
       current.selected = intersaction.object;
       current.selected.material.color.set(0xff0000);
       current.selectedCanMove = true;
-      // removePoint(uuid);
-      // handleLines();
-      // finishStructure();
     },
     removeSelected() {
       if (!current.selected) { return; }
-      removePoint(current.selected.uuid);
+      removePoint(current.selected);
       handleLines();
       this.cancel();
     },
