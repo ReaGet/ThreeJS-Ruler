@@ -1,16 +1,38 @@
 import * as THREE from "three";
+import {
+  CSS2DRenderer,
+  CSS2DObject,
+} from "three/addons/CSS2DRenderer.js";
 
-export default function(scene_) {
+import Stats from "three/addons/stats.module.js";
+
+export default function(scene_, camera_) {
   const scene = scene_;
+  const camera = camera_;
   const lines = [];
   let state = "";
   let current = {
     indicator: null,
+    indicatorLabel: null,
     selected: null,
     selectedCanMove: false,
     points: [],
     lines: [],
+    labels: [],
   };
+  let labelRenderer = createLabelRenderer();
+  let stats = Stats();
+  document.body.appendChild(stats.dom);
+
+  function createLabelRenderer() {
+    let labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = "absolute";
+    labelRenderer.domElement.style.top = "0px";
+    labelRenderer.domElement.style.pointerEvents = "none";
+    document.body.appendChild(labelRenderer.domElement);
+    return labelRenderer;
+  }
 
   function createPoint(point_) {
     const pointGeometry = new THREE.SphereGeometry(7, 32, 16);
@@ -40,8 +62,21 @@ export default function(scene_) {
     return line;
   }
 
+  function createLabel(point) {
+    const measurementDiv = document.createElement(
+      'div'
+    );
+    measurementDiv.className = 'measurementLabel';
+    measurementDiv.innerText = '0.0 units';
+    const measurementLabel = new CSS2DObject(measurementDiv);
+    measurementLabel.position.copy(point);
+    scene.add(measurementLabel);
+    return measurementLabel;
+  }
+
   function handleLines() {
     removeLines();
+    removeLabels();
 
     if (current.points.length < 2) { return; }
 
@@ -50,7 +85,12 @@ export default function(scene_) {
         current.points[i].position,
         current.points[i + 1].position
       );
+      const label = createLabel(current.points[i]);
+      const val = calcDistance(line.geometry.attributes.position.array);
+      label.element.innerText = val.d.toFixed(2) + ' units';
+      label.position.lerpVectors(val.v0, val.v1, 0.5);
       current.lines.push(line);
+      current.labels.push(label);
     }  
   }
 
@@ -59,6 +99,15 @@ export default function(scene_) {
       const line = current.lines[i];
       scene.remove(line);
       current.lines.splice(i, 1);
+      i--;
+    }
+  }
+
+  function removeLabels() {
+    for (let i = 0; i < current.labels.length; i++) {
+      const label = current.labels[i];
+      scene.remove(label);
+      current.labels.splice(i, 1);
       i--;
     }
   }
@@ -74,13 +123,6 @@ export default function(scene_) {
     }
   }
 
-  function updatePoint(target) {
-    const point = current.selected;
-    point.position.set(target.x, target.y, target.z);
-    point.position.needsUpdate = true;
-    handleLines();
-  }
-
   function finishStructure() {
     if (current.points.length < 2) {
       current.points.forEach((point) => scene.remove(point));
@@ -89,6 +131,7 @@ export default function(scene_) {
     const line = {};
     line.points = current.points;
     line.lines = current.lines;
+    line.labels = current.labels;
 
     lines.push(line);
   }
@@ -97,10 +140,36 @@ export default function(scene_) {
     current.selected = null;
     current.points = [];
     current.lines = [];
+    current.labels = [];
   }
 
   function diselect() {
     current.selected && current.selected.material.color.set(0xffffff);
+  }
+
+  function calcDistance(positions) {
+    const v0 = new THREE.Vector3(
+        positions[0],
+        positions[1],
+        positions[2]
+    );
+    const v1 = new THREE.Vector3(
+      positions[3],
+      positions[4],
+      positions[5]
+    );
+    return {
+      d: v0.distanceTo(v1),
+      v0,
+      v1
+    };
+  }
+
+  function updatePoint(target) {
+    const point = current.selected;
+    point.position.set(target.x, target.y, target.z);
+    point.position.needsUpdate = true;
+    handleLines();
   }
 
   function updateIndicator(point) {
@@ -113,12 +182,18 @@ export default function(scene_) {
     positions[4] = point.y;
     positions[5] = point.z;
     current.indicator.geometry.attributes.position.needsUpdate = true;
+
+    const val = calcDistance(positions);
+    current.indicatorLabel.element.innerText = val.d.toFixed(2) + ' units';
+    current.indicatorLabel.position.lerpVectors(val.v0, val.v1, 0.5);
   }
 
   function removeIndicator() {
     if (!current.indicator) { return; }
     scene.remove(current.indicator);
+    scene.remove(current.indicatorLabel);
     current.indicator = null;
+    current.indicatorLabel = null;
   }
 
   const ruler = {
@@ -134,10 +209,11 @@ export default function(scene_) {
       createPoint(point);
       if (!current.indicator) {
         current.indicator = createLine(point);
+        current.indicatorLabel = createLabel(point);
       }
       handleLines();
     },
-    update(intersaction) {
+    intersects(intersaction) {
       const point = intersaction[0]?.point;
       const target = intersaction.filter((item) => (
         item.object.userData?.line !== true && item.object.userData?.dot !== true
@@ -148,6 +224,10 @@ export default function(scene_) {
       } else {
         updateIndicator(point);
       }
+    },
+    update() {
+      stats.update();
+      labelRenderer.render(scene, camera);
     },
     mouseUp() {
       current.selectedCanMove = false;

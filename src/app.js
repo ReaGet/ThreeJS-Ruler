@@ -135,7 +135,7 @@ function init() {
   window.addEventListener("resize", onWindowResize);
   }
 
-  ruler = Ruler(scene);
+  ruler = Ruler(scene, currentCamera);
   let mouse, mousePrev = [], dragging, clicked;
 
   document.addEventListener("mousedown", (event) => {
@@ -173,7 +173,7 @@ function init() {
       dragging = true;
     }
 
-    ruler.update(
+    ruler.intersects(
       intersects()
     );
   });
@@ -210,6 +210,7 @@ function onWindowResize() {
 function render() {
   renderer.render(scene, currentCamera);
   // orbit.update();
+  ruler.update();
 }
 
 function animate() {
