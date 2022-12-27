@@ -19,6 +19,7 @@ export default function(scene_, camera_) {
     points: [],
     lines: [],
     labels: [],
+    history: [],
   };
   let labelRenderer = createLabelRenderer();
   let stats = Stats();
@@ -77,7 +78,7 @@ export default function(scene_, camera_) {
   function handleLines() {
     removeLines();
     removeLabels();
-
+    
     if (current.points.length < 2) { return; }
 
     for (let i = 0; i < current.points.length - 1; i++) {
@@ -141,6 +142,7 @@ export default function(scene_, camera_) {
     current.points = [];
     current.lines = [];
     current.labels = [];
+    current.history = [];
   }
 
   function diselect() {
@@ -173,8 +175,10 @@ export default function(scene_, camera_) {
   }
 
   function updateIndicator(point) {
+    if (!current.indicator || current.points.length === 0) { return; }
     const prevPoint = current.points[current.points.length - 1];
     const positions = current.indicator.geometry.attributes.position.array;
+    // console.log(point, prevPoint);
     positions[0] = prevPoint.position.x;
     positions[1] = prevPoint.position.y;
     positions[2] = prevPoint.position.z;
@@ -206,6 +210,7 @@ export default function(scene_, camera_) {
       if (!point) { return; }
       state = "enabled";
 
+      current.history = [];
       createPoint(point);
       if (!current.indicator) {
         current.indicator = createLine(point);
@@ -213,7 +218,7 @@ export default function(scene_, camera_) {
       }
       handleLines();
     },
-    intersects(intersaction) {
+    handleMovement(intersaction) {
       const point = intersaction[0]?.point;
       const target = intersaction.filter((item) => (
         item.object.userData?.line !== true && item.object.userData?.dot !== true
@@ -264,6 +269,28 @@ export default function(scene_, camera_) {
     hasSelected() {
       return !!current.selected;
     },
+    undo() {      
+      const point = current.points.slice(-1).at(0);
+      current.history.push(point);
+      removePoint(point);
+      updateIndicator(point);
+      handleLines();
+      
+      if (current.points.length === 0) {
+        finishStructure();
+        this.cancel();
+        return;
+      }
+    },
+    redo() {
+      const point = current.history.splice(-1).at(0);
+      if (!point) {
+        return;
+      }
+      createPoint(point.position);
+      handleLines();
+      this.update();
+    }
   };
 
   return ruler;

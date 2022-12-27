@@ -173,7 +173,7 @@ function init() {
       dragging = true;
     }
 
-    ruler.intersects(
+    ruler.handleMovement(
       intersects()
     );
   });
@@ -190,6 +190,14 @@ function init() {
     }
     if (event.key === "Delete") {
       ruler.removeSelected();
+    }
+    if (event.key === "z") {
+      console.log("undo");
+      ruler.undo();
+    }
+    if (event.key === "y") {
+      console.log("redo");
+      ruler.redo();
     }
   });
 }
