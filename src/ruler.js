@@ -7,6 +7,7 @@ export default function(scene_) {
   let current = {
     indicator: null,
     selected: null,
+    selectedCanMove: false,
     points: [],
     lines: [],
   };
@@ -34,14 +35,15 @@ export default function(scene_) {
         opacity: 0.75,
       })
     );
+    line.userData.line = true;
     scene.add(line);
     return line;
   }
 
   function handleLines() {
-    if (current.points.length < 2) { return; }
-
     removeLines();
+    
+    if (current.points.length < 2) { return; }
 
     for (let i = 0; i < current.points.length - 1; i++) {
       const line = createLine(
@@ -72,6 +74,13 @@ export default function(scene_) {
     }
   }
 
+  function updatePoint(target) {
+    const point = current.selected;
+    point.position.set(target.x, target.y, target.z);
+    point.position.needsUpdate = true;
+    handleLines();
+  }
+
   function finishStructure() {
     if (current.points.length < 2) {
       current.points.forEach((point) => scene.remove(point));
@@ -88,6 +97,10 @@ export default function(scene_) {
     current.selected = null;
     current.points = [];
     current.lines = [];
+  }
+
+  function diselect() {
+    current.selected && current.selected.material.color.set(0xffffff);
   }
 
   function updateIndicator(point) {
@@ -112,7 +125,7 @@ export default function(scene_) {
     addPoint(intersaction) {
       const point = intersaction?.point;
       if (state === "selected") {
-        this.diselect();
+        this.cancel();
         return;
       }
       if (!point) { return; }
@@ -125,23 +138,31 @@ export default function(scene_) {
       handleLines();
     },
     update(intersaction) {
-      const point = intersaction?.point;
-      if (state !== "enabled" || !point) { return; }
-      updateIndicator(point);
+      const point = intersaction[0]?.point;
+      const target = intersaction.filter((item) => (
+        item.userData?.line !== true && item.userData?.dot !== true
+      )).at(0)?.point;
+      if (state === "" || !point || !target) { return; }
+      if (state === "selected") {
+        current.selectedCanMove && updatePoint(target);
+      } else {
+        updateIndicator(point);
+      }
+    },
+    mouseUp() {
+      console.log(222);
+      current.selectedCanMove = false;
     },
     cancel() {
       finishStructure();
       removeIndicator();
-      this.diselect();
+      diselect();
       resetCurrent();
       state = "";
     },
-    diselect() {
-      current.selected && current.selected.material.color.set(0xffffff);
-    },
     select(intersaction) {
-      this.diselect();
       if (state === "enabled") { return; }
+      this.cancel();
       state = "selected";
       current = lines.filter((line) => {
         return line.points.find((point) => {
@@ -150,16 +171,24 @@ export default function(scene_) {
       }).at(0);
       current.selected = intersaction.object;
       current.selected.material.color.set(0xff0000);
+      current.selectedCanMove = true;
       // removePoint(uuid);
       // handleLines();
       // finishStructure();
     },
+    removeSelected() {
+      if (!current.selected) { return; }
+      removePoint(current.selected.uuid);
+      handleLines();
+      this.cancel();
+    },
     isRuler(intersaction) {
-      return intersaction.object.userData.dot === true;
-    }
+      return intersaction && intersaction.object.userData.dot === true;
+    },
+    hasSelected() {
+      return !!current.selected;
+    },
   };
-
-  setInterval(() => console.log(state), 1000);
 
   return ruler;
 };

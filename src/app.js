@@ -136,22 +136,30 @@ function init() {
   }
 
   ruler = Ruler(scene);
-  let mouse, mousePrev = [], dragging;
+  let mouse, mousePrev = [], dragging, clicked;
 
   document.addEventListener("mousedown", (event) => {
+    const intersaction = intersects().at(0);
+    if (ruler.isRuler(intersaction)) {
+      ruler.select(intersaction);
+    }
+    if (ruler.hasSelected()) {
+      orbit.enabled = false;
+    }
     dragging = false;
   });
   
   document.addEventListener("mouseup", (event) => {
-    const intersaction = intersects();
+    const intersaction = intersects().at(0);
+    ruler.mouseUp();
     if (dragging || !intersaction) {
       return;
     }
     if (!ruler.isRuler(intersaction)) {
       ruler.addPoint(intersaction);
-    } else {
-      ruler.select(intersaction);
     }
+    
+    orbit.enabled = true;
   });
   
   document.addEventListener("mousemove", (event) => {
@@ -172,12 +180,16 @@ function init() {
 
   function intersects() {
     raycaster.setFromCamera(mouse, currentCamera);
-    return raycaster.intersectObjects(scene.children)[0];
+    return raycaster.intersectObjects(scene.children);
   }
 
   document.addEventListener("keyup", (event) => {
     if (event.key === "Escape") {
       ruler.cancel();
+      orbit.enabled = true;
+    }
+    if (event.key === "Delete") {
+      ruler.removeSelected();
     }
   });
 }
