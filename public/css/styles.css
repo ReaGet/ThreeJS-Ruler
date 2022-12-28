@@ -87,8 +87,8 @@ body.creating {
 }
 
 .ui-btn.disabled {
-  cursor: pointer;
-  pointer-events: none;
+  cursor: default;
+  /* pointer-events: none; */
   background-color: rgba(255, 255, 255, 0.2);
   opacity: 0.7;
 }
