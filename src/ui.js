@@ -1,6 +1,3 @@
-import createMachine from "./stateMachine.js";
-import emitter from "./emitter.js";
-
 class UI {
   constructor() {
     this.listeners = {};
