@@ -13,16 +13,19 @@ import { createBox } from "./utils.js";
 import ui from "./ui.js";
 
 import Ruler from "./ruler.js";
+import Magnify from "./magnify.js";
 
 let cameraPersp, currentCamera;
 let scene, renderer, orbit;
 const boxes = [];
 let ruler = null;
+let magnify = null;
 
 init();
 // render();
 
 function init() {
+  const pixelRatio = window.devicePixelRatio;
   {
   const aspect = window.innerWidth / window.innerHeight;
 
@@ -40,7 +43,7 @@ function init() {
   scene.add(light);
 
   renderer = new THREE.WebGLRenderer();
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(pixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
@@ -128,7 +131,11 @@ function init() {
 
   window.addEventListener("resize", onWindowResize);
   }
-
+  magnify = new Magnify({
+    renderer: renderer,
+    scene: scene,
+    radius: 50,
+  });
   ruler = Ruler(scene, currentCamera);
   let mouse, mousePrev = [], dragging;
 
@@ -180,6 +187,7 @@ function init() {
     );
 
     setUICoords();
+    magnify.render();
   });
 
   function intersects() {
