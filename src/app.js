@@ -139,6 +139,9 @@ function init() {
       () => orbit.enabled = false
     );
 
+    ui.emit("editing", ruler.hasSelected());
+    setUICoords();
+
     dragging = false;
   });
   
@@ -153,7 +156,6 @@ function init() {
     );
 
     ui.emit("creating", ruler.hasLines());
-    ui.emit("editing", ruler.hasSelected());
     if (!ruler.hasSelected()) {
       ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
     }
@@ -176,11 +178,19 @@ function init() {
     ruler.handleMovement(
       intersects()
     );
+
+    setUICoords();
   });
 
   function intersects() {
     raycaster.setFromCamera(mouse, currentCamera);
     return raycaster.intersectObjects(scene.children);
+  }
+
+  function setUICoords() {
+    if (ruler.hasSelected()) {
+      ui.emit("setCoords", ruler.getSelectedCoords());
+    }
   }
 
   ui.on("rulerEnabled", () => {
@@ -213,6 +223,13 @@ function init() {
     ui.emit("history", ruler.hasUndo(), ruler.hasRedo());
   });
 
+  ui.on("uiCoordsUpdated", (coords) => {
+    // console.log(coords);
+    if (ruler.hasSelected()) {
+      ruler.setSelectedCoords(coords);
+    }
+  });
+
   document.addEventListener("keyup", (event) => {
     if (event.key === "Escape") {
       ui.emit("cancelRuler");
@@ -220,6 +237,9 @@ function init() {
       orbit.enabled = true;
     }
     if (event.key === "Delete") {
+      if (event.target.closest(".ui")) {
+        return;
+      }
       ruler.removeSelected();
     }
     if (event.key === "z") {

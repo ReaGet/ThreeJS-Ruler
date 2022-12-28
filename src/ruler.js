@@ -181,10 +181,9 @@ export default function(scene_, camera_) {
     };
   }
 
-  function updatePoint(target) {
-    const point = current.selected;
-    point.position.set(target.x, target.y, target.z);
-    point.position.needsUpdate = true;
+  function updatePoint(position) {
+    current.selected.position.set(position.x, position.y, position.z);
+    current.selected.position.needsUpdate = true;
     handleLines();
   }
 
@@ -223,8 +222,9 @@ export default function(scene_, camera_) {
     },
     addPoint(intersaction, dragging = false) {
       const point = intersaction?.point;
-      this.mouseUp();
       if (this.isRuler(intersaction) || dragging) {
+        this.mouseUp();
+        // this.select(intersaction);
         return;
       }
       if (state === "selected") {
@@ -281,6 +281,12 @@ export default function(scene_, camera_) {
       current.selected = intersaction.object;
       current.selected.material.color.set(0xff0000);
       current.selectedCanMove = true;
+    },
+    getSelectedCoords() {
+      return current.selected.position;
+    },
+    setSelectedCoords(coords) {
+      updatePoint(coords);
     },
     removeSelected() {
       if (!current.selected) { return; }

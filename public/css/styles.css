@@ -48,6 +48,53 @@ body.creating {
   align-items: center;
 }
 
+.ui-coords {
+  height: 100%;
+  background-color: #fff;
+  border-radius: 5px;
+  width: inherit;
+  flex-shrink: 0;
+  padding: 0 10px;
+  margin-left: 20px;
+  display: none;
+}
+
+.ui-coords.active {
+  display: flex;
+}
+
+.ui-coords__item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.ui-coords__item + .ui-coords__item {
+  margin-left: 10px;
+}
+
+.ui-coords__item-img {
+  width: 30px;
+  height: 30px;
+}
+
+.ui-coords__item-input {
+  width: 90px;
+  padding: 8px 5px;
+  outline: none;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #d0d0d0;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  color: #333;
+  font-weight: 600;
+  text-align: center;
+  font-family: monospace;
+  font-size: 16px;
+}
+
 .ui-buttons {
   position: relative;
   display: flex;

@@ -4,6 +4,12 @@ class UI {
     this.history = document.querySelector(".ui-buttons__history");
     this.content = document.querySelector(".ui-content");
     this.body = document.body;
+    this.coords = {
+      parent: document.querySelector(".ui-coords"),
+      xAxis: document.querySelector(".ui-coords #xAxis"),
+      yAxis: document.querySelector(".ui-coords #yAxis"),
+      zAxis: document.querySelector(".ui-coords #zAxis"),
+    };
     this.buttons = {
       main: document.querySelector(".ui-btn--main"),
       undo: document.querySelector(".ui-btn[data-type='undo']"),
@@ -30,7 +36,7 @@ class UI {
       const clicked = event.target.closest("[data-action]");
       const action = clicked && clicked.getAttribute("data-action");
       const isDisabled = clicked && clicked.classList.contains("disabled");
-      const isUI = clicked ? "ui" : "";
+      const isUI = (event.target.closest(".ui")) ? "ui" : "";
 
       this.emit("mouseup", event, isUI);
       
@@ -43,6 +49,17 @@ class UI {
       event.stopPropagation();
       this.emit("mousemove", event);
     });
+    document.addEventListener("input", (event) => {
+      if (event.target.tagName !== "INPUT") {
+        return;
+      }
+      const coords = {
+        x: +this.coords.xAxis.value,
+        y: +this.coords.yAxis.value,
+        z: +this.coords.zAxis.value,
+      };
+      this.emit("uiCoordsUpdated", coords);
+    });
     this.on("creating", (hasLines) => {
       if (!hasLines) { return; }
       this.buttons.main.setAttribute("data-type", "accept");
@@ -51,10 +68,9 @@ class UI {
     this.on("editing", (hasSelected) => {
       if (!hasSelected) { return; }
       this.buttons.remove.classList.remove("disabled");
+      this.coords.parent.classList.add("active");
     });
-    this.on("cancelRuler", () => {
-      this.cancelRuler();
-    });
+    this.on("cancelRuler", this.cancelRuler.bind(this));
     this.on("history", (undo, redo) => {
       const enable = undo || redo;
       this.history.classList[enable ? "remove" : "add"]("hidden");
@@ -62,6 +78,7 @@ class UI {
       this.buttons.redo.classList[redo ? "remove" : "add"]("disabled");
       !undo && !redo && this.cancelRuler();
     });
+    this.on("setCoords", this.setCoords.bind(this));
   }
   toggleUI() {
     this.content.classList.toggle("active");
@@ -83,7 +100,8 @@ class UI {
     this.buttons.remove.classList.add("disabled");
     this.buttons.ruler.classList.remove("hidden");
     this.body.classList.remove("creating");
-    this.history.classList.add("hidden");    
+    this.history.classList.add("hidden");
+    this.coords.parent.classList.remove("active");
     this.emit("rulerCanceled");
   }
   remove() {    
@@ -94,6 +112,11 @@ class UI {
   }
   redo() {
     this.emit("redo");
+  }
+  setCoords(coords) {
+    this.coords.xAxis.value = coords.x;
+    this.coords.yAxis.value = coords.y;
+    this.coords.zAxis.value = coords.z;
   }
   set(element, type, value) {
     const action = value === true ? "add" : (value === false ? "remove" : "toggle");
