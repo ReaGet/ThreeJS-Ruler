@@ -135,6 +135,8 @@ function init() {
     renderer: renderer,
     scene: scene,
     radius: 50,
+    camera: currentCamera,
+    zoom: 3,
   });
   ruler = Ruler(scene, currentCamera);
   let mouse, mousePrev = [], dragging;
@@ -148,6 +150,9 @@ function init() {
 
     ui.emit("editing", ruler.hasSelected());
     setUICoords();
+    if (ruler.hasSelected()) {
+      magnify.setEnabled(true);
+    }
 
     dragging = false;
   });
@@ -187,7 +192,11 @@ function init() {
     );
 
     setUICoords();
-    magnify.render();
+    
+    magnify.update({
+      x: event.clientX,
+      y: event.clientY,
+    })
   });
 
   function intersects() {
@@ -203,11 +212,13 @@ function init() {
 
   ui.on("rulerEnabled", () => {
     ruler.setState("enabled");
+    magnify.setEnabled(true);
   });
 
   ui.on("rulerCanceled", () => {
     ruler.cancel();
     orbit.enabled = true;
+    magnify.setEnabled(false);
   });
 
   ui.on("remove", () => {
@@ -276,10 +287,12 @@ function onWindowResize() {
 
 }
 
-function render() {
+function render() {  
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   renderer.render(scene, currentCamera);
   // orbit.update();
   ruler.update();
+  magnify.render();
 }
 
 function animate() {
