@@ -290,7 +290,7 @@ function onWindowResize() {
 function render() {  
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
   renderer.render(scene, currentCamera);
-  // orbit.update();
+  orbit.update();
   ruler.update();
   magnify.render();
 }

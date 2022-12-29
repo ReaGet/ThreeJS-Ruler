@@ -12,7 +12,6 @@ export default class Magnify {
     this.position =  { x: 0, y: 0, };
 
     this.cursor = this.createCursor();
-    console.log(this.cursor);
     
     this.cameraM.setViewOffset(window.innerWidth, window.innerHeight, 0, 0, 64, 64);
     this.renderTarget = new THREE.WebGLRenderTarget(32, 32);

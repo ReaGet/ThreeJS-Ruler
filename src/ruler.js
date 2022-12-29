@@ -191,7 +191,6 @@ export default function(scene_, camera_) {
     if (!current.indicator || current.points.length === 0) { return; }
     const prevPoint = current.points[current.points.length - 1];
     const positions = current.indicator.geometry.attributes.position.array;
-    // console.log(point, prevPoint);
     positions[0] = prevPoint.position.x;
     positions[1] = prevPoint.position.y;
     positions[2] = prevPoint.position.z;
@@ -213,6 +212,14 @@ export default function(scene_, camera_) {
     current.indicatorLabel = null;
   }
 
+  function getLineByPoint(point) {
+    return lines.filter((line) => {
+      return line.points.find((p) => {
+        return p.uuid === point.uuid;
+      });
+    }).at(0);
+  }
+
   const ruler = {
     getState() {
       return state;
@@ -227,12 +234,12 @@ export default function(scene_, camera_) {
         // this.select(intersaction);
         return;
       }
-      if (state === "selected") {
+      // if (state === "selected") {
+      if (this.hasSelected() && !current.indicator) {
         this.cancel();
         return;
       }
       if (!point || state !== "enabled") { return; }
-      // state = "enabled";
 
       current.history = [];
       createPoint(point);
@@ -247,11 +254,16 @@ export default function(scene_, camera_) {
       const target = intersaction.filter((item) => (
         item.object.userData?.line !== true && item.object.userData?.dot !== true
       )).at(0);
-      if (state === "" || !point || !target) { return; }
-      if (state === "selected") {
+
+      if (!target) {
+        return;
+      }
+      
+      if (this.hasSelected()) {
         current.selectedCanMove && updatePoint(target.point);
+        point && updateIndicator(point);
       } else {
-        updateIndicator(point);
+        point && updateIndicator(point);
       }
     },
     update() {
@@ -269,15 +281,15 @@ export default function(scene_, camera_) {
       this.setState();
     },
     select(intersaction, fn = () => {}) {
-      if (state === "enabled" || !this.isRuler(intersaction)) { return; }
+      deselect();
+      if (!this.isRuler(intersaction)) { return; }
+      let potentionalCurrent = getLineByPoint(intersaction.object);
       fn();
-      this.cancel();
-      this.setState("selected");
-      current = lines.filter((line) => {
-        return line.points.find((point) => {
-          return point.uuid === intersaction.object.uuid;
-        });
-      }).at(0);
+      console.log(potentionalCurrent, potentionalCurrent?.selected);
+      if (potentionalCurrent && potentionalCurrent.selected !== null && state === "enabled") {
+        return;
+      }
+      !state && (current = potentionalCurrent);
       current.selected = intersaction.object;
       current.selected.material.color.set(0xff0000);
       current.selectedCanMove = true;
