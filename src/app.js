@@ -134,7 +134,7 @@ function init() {
   magnify = new Magnify({
     renderer: renderer,
     scene: scene,
-    radius: 50,
+    radius: 90,
     camera: currentCamera,
     zoom: 3,
   });
